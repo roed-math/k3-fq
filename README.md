@@ -52,6 +52,18 @@ The export file is in psycodict's `copy_from`/`reload` format: a header line wit
 
 Generate the real data on lovelace.  mimir is shared and often heavily loaded, so use it only for development and small tests.
 
+### Counting before enumerating
+
+`k3fq.py counts` gives the number of classes with each geometric Picard rank without listing them.  Every class factors uniquely as (cyclotomic part of degree 22 - 2k) × (transcendental part of degree 2k), and the geometric Picard rank is 22 - 2k.  So
+
+    N(q, rho >= R) = sum over 2k <= 22 - R of T(q, 2k) C(22 - 2k).
+
+Here C(e) counts products of cyclotomic polynomials of degree e, and T(q, 2k) counts transcendental parts.  T is recovered from the counts printed by Kedlaya's driver (see `k3fq/counts.py`).  For example:
+
+    sage -python k3fq.py -j 4 counts 3-64 --max-degree 6
+
+`scripts/lovelace_counts.sh` also does the full count over F_2.
+
 ## Uploading to the LMFDB
 
 [`test_upload/k3_fq_isog_test.txt`](test_upload/k3_fq_isog_test.txt) is a 12-row test file in the format read by psycodict's `copy_from`.  It contains the two supersingular classes over F_2 that the LMFDB tests (`lmfdb/k3fq/test_k3fq.py`) look up, plus classes with assorted features (both signs, Kummer candidates, a base change from F_2 to F_4 together with its model, a non-K3 Newton polygon, and a reducible transcendental part).  `scripts/make_test_upload.py` regenerates it from any export file.
