@@ -367,8 +367,10 @@ class K3Poly:
             if x >= 1:
                 elev += max(0, c - (x - 1))
             coelev += max(0, x - c)
-        D["newton_elevation"] = elev
-        D["newton_coelevation"] = coelev
+        # The lattice point counts are only meaningful for K3-type polygons
+        # (otherwise e.g. slopes 3/4, 1, 5/4 over F_4 would look supersingular)
+        D["newton_elevation"] = elev if k3np else None
+        D["newton_coelevation"] = coelev if k3np else None
         D["is_ordinary"] = (h == 1)
         D["is_supersingular"] = (h == 0)
 

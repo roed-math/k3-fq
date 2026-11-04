@@ -159,7 +159,9 @@ def test_height_and_elevation():
     with open(path) as F:
         for line in F:
             D = K3Poly([int(c) for c in line.split()]).compute()
-            if D["has_k3_newton_polygon"] and not D["is_supersingular"]:
+            if not D["has_k3_newton_polygon"]:
+                assert D["newton_elevation"] is None and D["newton_coelevation"] is None
+            elif not D["is_supersingular"]:
                 h = D["height"]
                 assert D["newton_elevation"] == h - 1
                 assert D["newton_coelevation"] == 12 - h

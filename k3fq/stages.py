@@ -222,7 +222,9 @@ def kummer_stage(q, datadir):
     """
     kummer_av_classes: abelian surfaces whose wedge square has the same
     transcendental part.  realizable_kummer is -1 when there are none
-    (e.g. whenever the geometric Picard rank is below 18) and 0 otherwise.
+    (e.g. whenever the geometric Picard rank is below 18) or when the class
+    fails the necessary conditions for K3 surfaces (realizable_k3 = -1),
+    and 0 otherwise.
     Left null in characteristic 2 and when the LMFDB has no abelian surfaces
     over F_q.
     """
@@ -232,13 +234,14 @@ def kummer_stage(q, datadir):
     for lab, a1, a2 in avs:
         lookup[tuple(wedge_square_transcendental(q, a1, a2))].append(lab)
     rows = []
-    for row in iter_rows(datadir, q, ["label", "geometric_picard_rank", "transcendental_poly"]):
+    for row in iter_rows(datadir, q, ["label", "geometric_picard_rank", "transcendental_poly",
+                                      "realizable_k3"]):
         if p == 2 or not avs:
             rows.append({"label": row["label"], "kummer_av_classes": None, "realizable_kummer": None})
             continue
         labs = sorted(lookup.get(tuple(row["transcendental_poly"]), [])) if row["geometric_picard_rank"] >= 18 else []
         rows.append({"label": row["label"], "kummer_av_classes": labs,
-                     "realizable_kummer": 0 if labs else -1})
+                     "realizable_kummer": 0 if labs and row["realizable_k3"] != -1 else -1})
     os.makedirs(os.path.join(datadir, "kummer"), exist_ok=True)
     write_file(os.path.join(datadir, "kummer", "q%s.txt" % q),
                [("label", "text")] + [(c, ISOG_TYPES[c]) for c in KUMMER_COLUMNS], rows)
