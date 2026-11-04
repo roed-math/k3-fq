@@ -13,7 +13,7 @@ def schema_columns():
     cols = []
     with open(SCHEMA) as F:
         for line in F:
-            m = re.match(r"^\| ([a-z0-9_]+) \| ([a-z0-9\[\]]+) \|", line)
+            m = re.match(r"^\| ([a-z0-9_]+) \| ([a-z0-9 \[\]]+) \|", line)
             if m and m.group(1) != "Column":
                 cols.append((m.group(1), m.group(2)))
     return cols

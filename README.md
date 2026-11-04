@@ -48,6 +48,37 @@ The export file is in psycodict's `copy_from`/`reload` format: a header line wit
 | `kummer` | abelian surfaces over F_q (from `av_fq_isog`) whose wedge square has the same transcendental part | `kummer/q{q}.txt` |
 | `export` | joins everything; columns from stages that have not been run are null | `export/k3_fq_isog.q{q}.txt` |
 
+### Where to run
+
+Generate the real data on lovelace.  mimir is shared and often heavily loaded, so use it only for development and small tests.
+
+## Uploading to the LMFDB
+
+[`test_upload/k3_fq_isog_test.txt`](test_upload/k3_fq_isog_test.txt) is a 12-row test file in the format read by psycodict's `copy_from`.  It contains the two supersingular classes over F_2 that the LMFDB tests (`lmfdb/k3fq/test_k3fq.py`) look up, plus classes with assorted features (both signs, Kummer candidates, a base change from F_2 to F_4 together with its model, a non-K3 Newton polygon, and a reducible transcendental part).  `scripts/make_test_upload.py` regenerates it from any export file.
+
+To create the table and load a file, from an LMFDB checkout with write access (this has not been run against a real database):
+
+```python
+import sys
+from collections import defaultdict
+sys.path.append("/path/to/k3-fq")
+from k3fq.columns import ISOG_COLUMNS
+from lmfdb import db
+
+search_columns = defaultdict(list)
+for col, typ in ISOG_COLUMNS:
+    search_columns[typ].append(col)
+db.create_table("k3_fq_isog", dict(search_columns), label_col="label", sort=["q", "poly"],
+                table_description="Motives of K3 type over finite fields, up to isogeny",
+                force_description=False)
+db.k3_fq_isog.copy_from("test_upload/k3_fq_isog_test.txt")
+
+from lmfdb.k3fq.stats import K3FqStats
+K3FqStats().setup()   # statistics for /Motive/K3/Fq/stats
+```
+
+For the full table you will also want indexes, e.g. on `(q, poly)` (the default sort) and on `poly_str` with `text_pattern_ops` (for initial-coefficient searches).
+
 ## Notes on the algorithms
 
 * **Galois groups.**  A transcendental factor `f` of degree `2k` is palindromic with no real roots, so `f(T) = T^k h(T + 1/T)` and `Gal(f)` lies in `C2 wr Gal(h)`.  `Gal(h)` has degree at most 11, so PARI's `polgalois` handles it.  We certify that `Gal(f)` is the full wreath product by finding a prime whose Frobenius gives a suitable element of the kernel; see `k3fq/galois.py`.  The certificate reads the cycle structure off the factorizations of `f` and `h` modulo the prime.  The label of `C2 wr kTj` comes from `k3fq/data/wreath_labels.txt`, which `magma/wreath_labels.m` generates.  When the certificate holds, the angle rank is exactly `k`.  Otherwise we use PARI's `lindep` at high precision, as abvar-fq does.  In a sample of 60 factors of degree at least 12 over F_2, the certificate succeeded for 48, and Magma confirmed all 48 labels; the 12 failures had genuinely smaller Galois groups.

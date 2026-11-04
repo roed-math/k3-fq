@@ -12,7 +12,7 @@ ISOG_COLUMNS = [
     ("poly", "bigint[]"),
     ("poly_str", "text"),
     ("real_poly", "bigint[]"),
-    ("angles", "float8[]"),
+    ("angles", "double precision[]"),
     ("angle_rank", "smallint"),
     ("angle_corank", "smallint"),
     ("slopes", "text[]"),
