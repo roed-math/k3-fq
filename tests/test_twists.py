@@ -4,7 +4,7 @@ from sage.all import ZZ
 
 from k3fq.cyclotomic import R, T
 from k3fq.invariants import K3Poly
-from k3fq.twists import base_change, twist_data, primitive_model_data
+from k3fq.twists import base_change, base_change_resultant, twist_data, primitive_model_data
 
 DATA = os.path.join(os.path.dirname(__file__), "data", "q2_sample.txt")
 
@@ -22,6 +22,8 @@ def test_base_change_composition():
         assert R(PP.list()[::2]) == R(P2)
         assert base_change(c, 6) == base_change(base_change(c, 2), 3)
         assert R(base_change(c, 3))[0] == 8
+        for n in (2, 3, 5, 6):
+            assert base_change(c, n) == base_change_resultant(c, n)
 
 
 def test_quadratic_twists():

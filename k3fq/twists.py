@@ -19,13 +19,15 @@ and under gcd with L, the lcm of the orders of the roots of unity involved.
 So its minimal elements are divisors of L.  We find them numerically and then
 check each one by exact base change.
 """
-from collections import defaultdict
+from collections import Counter, defaultdict
+from functools import lru_cache
 from math import gcd
 
 from sage.all import ZZ, QQ, RealField, ComplexField, PolynomialRing, pari, pi, euler_phi, lcm as sage_lcm
 
 from .cyclotomic import R, T
 from .labels import poly_to_label
+from .invariants import power_sums
 
 M_TWIST = sage_lcm([m for m in range(1, 500) if euler_phi(m) <= 44])
 PREC = 400
@@ -35,17 +37,48 @@ MAX_TWISTS = 50
 
 def base_change(coeffs, n):
     """
-    Coefficients of P_n(T) = q^n prod (1 - alpha_i^n T), computed exactly as
-    a resultant (as in abvar-fq's base_change).
+    Coefficients of P_n(T) = q^n prod (1 - alpha_i^n T).
+
+    Write L(T) = q^{-1} P(qT), whose reciprocal roots qalpha_i have power sums
+    t_j = Tr(Frob^j).  The base change L_n has power sums t_{kn}, so Newton's
+    identities give L_n, and P_n(T) = q^n L_n(T / q^n).  Everything is exact
+    integer arithmetic.
+    """
+    n = int(n)
+    q = ZZ(coeffs[0])
+    d = len(coeffs) - 1
+    if n == 1:
+        return [ZZ(c) for c in coeffs]
+    b = [ZZ(1)] + [q ** (i - 1) * ZZ(coeffs[i]) for i in range(1, d + 1)]
+    t = power_sums(b, d * n)
+    u = [None] + [t[k * n] for k in range(1, d + 1)]
+    c = [ZZ(1)]
+    for k in range(1, d + 1):
+        s = sum(u[i] * c[k - i] for i in range(1, k + 1))
+        assert s % k == 0
+        c.append(-s // k)
+    qn = q ** n
+    ans = [qn]
+    for i in range(1, d + 1):
+        num = c[i]
+        den = qn ** (i - 1)
+        assert num % den == 0
+        ans.append(num // den)
+    return ans
+
+
+_Ru = PolynomialRing(R, "u")
+
+
+def base_change_resultant(coeffs, n):
+    """
+    The same as ``base_change``, via resultants (slower; used in tests).
     """
     P = R(coeffs)
     for ell, e in ZZ(n).factor():
         for _ in range(e):
             P = _base_change_prime(P, ell)
     return P.list()
-
-
-_Ru = PolynomialRing(R, "u")
 
 
 def _base_change_prime(P, ell):
@@ -104,26 +137,34 @@ def _key(row, thetas):
 
 def _all_angles(row):
     """
-    All 22 root angles (fractions of a turn): exact rationals for the
-    cyclotomic part, reals for the transcendental part.
+    The data used to compare base changes: the cyclotomic orders (as a
+    Counter) and the angles of the transcendental roots.
     """
-    cyc = []
-    for m in row["cyclotomic_factors"]:
-        cyc.extend(QQ((j, m)) for j in range(m) if gcd(j, m) == 1)
-    return cyc, _angles(row["transcendental_factors"])
+    return Counter(row["cyclotomic_factors"]), _angles(row["transcendental_factors"])
 
 
-def _same_after(n, A, B, eps):
-    """
-    Whether the multisets {n a} and {n b} (mod 1) agree, for the exact parts
-    and (within eps) for the numerical parts.
-    """
-    ca, ta = A
-    cb, tb = B
-    # (Sage's % on rationals is modular inversion, not the fractional part)
-    if sorted(n * x - (n * x).floor() for x in ca) != sorted(n * x - (n * x).floor() for x in cb):
-        return False
+@lru_cache(maxsize=None)
+def _phi(m):
+    return int(euler_phi(m))
 
+
+def _cyclotomic_base_change(orders, n):
+    """
+    The cyclotomic orders of the base change to degree n: a root of unity of
+    order m becomes one of order m/gcd(m, n), and the phi(m) roots of
+    Phi_m map onto the primitive (m/g)-th roots phi(m)/phi(m/g) times each.
+    """
+    out = Counter()
+    for m, e in orders.items():
+        mp = m // gcd(m, n)
+        out[mp] += e * (_phi(m) // _phi(mp))
+    return out
+
+
+def _transcendental_same_after(n, ta, tb, eps):
+    """
+    Whether the multisets {n a} and {n b} (mod 1) agree within eps.
+    """
     def red(xs):
         out = []
         for x in xs:
@@ -136,21 +177,38 @@ def _same_after(n, A, B, eps):
     return all(abs(x - y) < eps for x, y in zip(red(ta), red(tb)))
 
 
-def _relevant_lcm(A, B, eps):
+def _transcendental_lcm(ta, tb, eps):
     """
-    lcm of the orders of the roots of unity relating roots of A and B,
-    together with the orders of the cyclotomic roots.
+    lcm of the orders of the roots of unity b/a, over pairs of transcendental
+    roots whose ratio is a root of unity.
     """
     L = 1
-    for x in A[0] + B[0]:
-        L = sage_lcm(L, x.denominator())
-    for a in A[1]:
-        for b in B[1]:
+    for a in ta:
+        for b in tb:
             d = M_TWIST * (b - a)
             r = d.round()
             if abs(d - r) < eps * M_TWIST:
                 L = sage_lcm(L, M_TWIST // gcd(int(r) % M_TWIST, M_TWIST))
     return ZZ(L)
+
+
+def _minimal_divisors(L, valid):
+    """
+    The minimal divisors n of L (for divisibility) with valid(n), assuming
+    the set of valid n is closed under taking multiples.
+    """
+    found = []
+    for n in ZZ(L).divisors():
+        if any(n % d == 0 for d in found):
+            continue
+        if valid(n):
+            found.append(n)
+    return found
+
+
+def _minimal_elements(ns):
+    ns = sorted(set(ns))
+    return [n for i, n in enumerate(ns) if not any(n % d == 0 for d in ns[:i])]
 
 
 # Base change labels are only recorded for q^n < 2^BC_LABEL_BITS
@@ -160,7 +218,7 @@ BC_LABEL_BITS = 128
 def angle_data(row):
     """
     The data needed for twist computations: the geometric key and the
-    angles of all roots.
+    output of ``_all_angles``.
     """
     A = _all_angles(row)
     return _key(row, A[1]), A
@@ -169,25 +227,33 @@ def angle_data(row):
 def minimal_twist_degrees(rowA, rowB, A=None, B=None):
     """
     The minimal n (for divisibility) with P_n = P'_n.  ``A`` and ``B`` are
-    the outputs of ``_all_angles``.  Each n with q^n < 2^BC_LABEL_BITS is
-    also checked by exact base change.
+    the outputs of ``_all_angles``.
+
+    The n for which the cyclotomic parts agree, and those for which the
+    transcendental parts agree, are both closed under multiples.  So the
+    minimal n for both are minimal elements of lcms of the minimal ones.
+    Their minimal elements divide the lcm of the cyclotomic orders, and of the
+    orders of the ratios of transcendental roots, respectively.  Each n with
+    q^n < 2^BC_LABEL_BITS is also checked by exact base change.
     """
     eps = RealField(PREC)(2) ** (-PREC // 2)
     if A is None:
         A = _all_angles(rowA)
     if B is None:
         B = _all_angles(rowB)
-    L = _relevant_lcm(A, B, eps)
+    (ca, ta), (cb, tb) = A, B
+    LC = 1
+    for m in list(ca) + list(cb):
+        LC = sage_lcm(LC, m)
+    cyc = _minimal_divisors(LC, lambda n: _cyclotomic_base_change(ca, n) == _cyclotomic_base_change(cb, n))
+    trans = _minimal_divisors(_transcendental_lcm(ta, tb, eps),
+                              lambda n: _transcendental_same_after(n, ta, tb, eps))
+    found = _minimal_elements(sage_lcm(c, t) for c in cyc for t in trans)
     bits = ZZ(rowA["q"]).nbits()
-    found = []
-    for n in L.divisors():
-        if any(n % d == 0 for d in found):
-            continue
-        if _same_after(n, A, B, eps):
-            if n * bits <= BC_LABEL_BITS and base_change(rowA["poly"], n) != base_change(rowB["poly"], n):
-                raise RuntimeError("numerical twist check failed for %s, %s, n=%s"
-                                   % (rowA["label"], rowB["label"], n))
-            found.append(n)
+    for n in found:
+        if n * bits <= BC_LABEL_BITS and base_change(rowA["poly"], n) != base_change(rowB["poly"], n):
+            raise RuntimeError("numerical twist check failed for %s, %s, n=%s"
+                               % (rowA["label"], rowB["label"], n))
     return found
 
 
