@@ -25,7 +25,7 @@ This is a new LMFDB section, "Motives of K3 type" over F_q.  Each row is a degre
 The stages are `enumerate`, `basic`, `fields`, `twists`, `basechange`, `kummer`, `export` and `counts`; run them as `sage -python k3fq.py ...`.  The README has the details.  Tests: `make test` (73 pass; a fresh `git clone --recursive` passes too).
 
 Key design points:
-- Labels are `q.ρ.c.b1_..._bk` (`k3fq/labels.py`): the geometric Picard rank, the index `c` of the cyclotomic part among those of degree ρ̄, and the coefficients of the transcendental part, as in abelian variety labels.  They replaced `q.s.c1_..._c11` on 2026-11-05, because large cyclotomic parts made those 25–58 characters long (median 32 in the sample; the new median is 13).  The geometric class representative of a complete twist class always has `c = a`.
+- Labels are `q.ρ.c.t` (`k3fq/labels.py`): the geometric Picard rank, the index `c` of the cyclotomic part among those of degree ρ̄, and the coefficients of the transcendental part in balanced base 26 (`n` = 0), all padded to one width and concatenated.  They replaced `q.s.c1_..._c11` on 2026-11-05, because large cyclotomic parts made those 25–58 characters long (median 32 in the sample; the new median is 11).  The geometric class representative of a complete twist class always has `c = a`.
 - Sign −1 polynomials are (1 − T²) times the sign +1 polynomials of degree 20.
 - `--min-geometric-rank R` multiplies transcendental parts of degree ≤ 22 − R by every cyclotomic product of the complementary degree.
 - Galois groups are certified as C2 ≀ Gal(h) via Frobenius cycle types, with PARI's `polgalois` for the real polynomial h; Magma is the fallback.

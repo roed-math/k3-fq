@@ -14,20 +14,20 @@ Other varieties of K3 type are treated through the same 22-dimensional motive $M
 - Gushel–Mukai fourfold: $H^4_{van}(Y)(2)$.
 - Verra fourfold: the K3-type piece of $H^4(Y)(2)$ (see the notes below).
 
-**Label**: `q.ρ.c.b1_b2_..._bk` where
+**Label**: `q.ρ.c.t` where
 
 - `q` is the cardinality of the base field;
 - `ρ` is the geometric Picard rank $\bar\rho$, which is even, and $k = (22 - \bar\rho)/2$;
 - `c` encodes the cyclotomic part $C = (1-T)^{e_1}\prod_{m > 1}\Phi_m^{e_m}$.  Index the exponent vectors $(e_1, e_2, e_3, \ldots)$ by the 43 integers $m$ with $\varphi(m) \le 22$, in increasing order.  Sort the vectors with $\sum_m e_m\varphi(m) = \bar\rho$ in decreasing lexicographic order and number them from $0$.  Then `c` is the number of $C$, written in base 26 with digits `a`–`z` (`a` = 0).  So `a` is $(1-T)^{\bar\rho}$, and for $\bar\rho = 2$ the codes `a`–`f` are $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$.  There are 60,280 cyclotomic parts of degree 22, so `c` has at most four letters;
-- `b1_..._bk` encode the coefficients $b_1, \ldots, b_k$ of the transcendental part $P_T = q + b_1 T + \cdots + b_{2k-1}T^{2k-1} + qT^{2k}$ as in the abelian variety labels.  Nonnegative integers are written in base 26 with digits `a`–`z` (`a` = 0); negative integers get a leading `a`.
+- `t` encodes the coefficients $b_1, \ldots, b_k$ of the transcendental part $P_T = q + b_1 T + \cdots + b_{2k-1}T^{2k-1} + qT^{2k}$.  Each $b_i$ is written in balanced base 26, where the letters `a`–`z` stand for the digits $-13, \ldots, 12$ (so `n` = 0, `o` = 1, `m` = $-1$, and `oa` = 13); no sign is needed.  The codes are padded with leading `n`s to a common width $w$, the smallest that fits all of them, and concatenated, so `t` has $kw$ letters.  Usually $w = 1$: over $\mathbb{F}_2$ this holds for more than 98% of the transcendental parts of each degree up to 16.
 
-The transcendental part is palindromic ($b_{2k-i} = b_i$), so the label determines $P = C \cdot P_T$.  When $\bar\rho = 22$ there is no transcendental part, and the label is `q.22.c`.  The sign $\varepsilon = (-1)^{e_1}$ is determined by `c`.  For example, $2(1-T)^{22}$ has label `2.22.a` and $2(1-T)^{21}(1+T)$ has label `2.22.b`.  Over $\mathbb{F}_4$, $(1-T)^{16}\,\Phi_4\,(4 + T + 6T^2 + T^3 + 4T^4)$ has label `4.18.e.b_g`.
+The transcendental part is palindromic ($b_{2k-i} = b_i$), so the label determines $P = C \cdot P_T$.  When $\bar\rho = 22$ there is no transcendental part, and the label is `q.22.c`.  The sign $\varepsilon = (-1)^{e_1}$ is determined by `c`.  For example, $2(1-T)^{22}$ has label `2.22.a` and $2(1-T)^{21}(1+T)$ has label `2.22.b`.  Over $\mathbb{F}_4$, $(1-T)^{16}\,\Phi_4\,(4 + T + 6T^2 + T^3 + 4T^4)$ has label `4.18.e.ot`, and $(1-T)^{18}(2 - 3T + 2T^2)^2$ has label `4.18.a.nboe` ($b_1 = -12$, $b_2 = 17$).
 
 Labels are ordered by $q$, then $\bar\rho$, then the number encoded by `c`, then $b_1, \ldots, b_k$ as integers.  This order defines the representative in `geometric_class`.  They are implemented in `k3fq/labels.py` in [roed-math/k3-fq](https://github.com/roed-math/k3-fq).
 
 | Column | Type | Description |
 | --- | --- | --- |
-| label | text | label `q.ρ.c.b1_..._bk`, as above |
+| label | text | label `q.ρ.c.t`, as above |
 | q | integer | cardinality of the base field |
 | p | integer | characteristic of the base field |
 | r | smallint | degree of the base field over its prime field, so that $q = p^r$ |

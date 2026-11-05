@@ -6,15 +6,19 @@ cyclotomic part, of degree rho (the geometric Picard rank), and P_T is the
 transcendental part, which is palindromic of degree d = 22 - rho with
 constant term q.  A label has the form
 
-    q.rho.c.b1_b2_..._bk      (k = d/2)
+    q.rho.c.t      (k = d/2)
 
 where
 
 - ``c`` is the letter code of the index of the exponent vector
   (e_1, e_2, e_3, ...) among those of total degree rho, in decreasing
   lexicographic order (so ``a`` is (1 - T)^rho);
-- ``bi`` is the signed letter code of the coefficient of T^i in P_T, as in
-  the abelian variety labels.
+- ``t`` encodes the coefficients b_1, ..., b_k of T, ..., T^k in P_T: each is
+  written in balanced base 26, with the letters a, ..., z standing for the
+  digits -13, ..., 12 (so n = 0, o = 1, m = -1), padded with leading n's to
+  a common width w, the smallest that fits all of them.  So ``t`` has
+  length k * w, and when every -13 <= b_i <= 12 it has one letter per
+  coefficient.
 
 When rho = 22 there is no transcendental part and the label is ``q.22.c``.
 The sign of the functional equation is (-1)^{e_1}, so it is not needed.
@@ -84,6 +88,66 @@ def signed_class_to_int(code):
     if code.startswith("a"):
         return -class_to_int(code[1:])
     return class_to_int(code)
+
+
+def balanced_code(n, width=1):
+    """
+    ``n`` in balanced base 26, with the letters a-z standing for the digits
+    -13, ..., 12, padded with leading n's (the digit 0) to ``width`` letters.
+
+    >>> [balanced_code(m) for m in (0, 1, -1, 12, -13, 13, -14, 324, -351, 325)]
+    ['n', 'o', 'm', 'z', 'a', 'oa', 'mz', 'zz', 'aa', 'oaa']
+    >>> balanced_code(-1, 3)
+    'nnm'
+    """
+    digits = []
+    while n or not digits:
+        r = (n + 13) % 26 - 13
+        digits.append(r)
+        n = (n - r) // 26
+    digits.extend([0] * (width - len(digits)))
+    return "".join(chr(110 + d) for d in reversed(digits))
+
+
+def balanced_value(code):
+    """
+    Inverse of :func:`balanced_code`.
+
+    >>> [balanced_value(c) for c in ('n', 'm', 'mz', 'nnm')]
+    [0, -1, -14, -1]
+    """
+    n = 0
+    for c in code:
+        if not "a" <= c <= "z":
+            raise ValueError("invalid letter code %r" % code)
+        n = 26 * n + ord(c) - 110
+    return n
+
+
+def transcendental_code(lower):
+    """
+    The coefficients ``lower`` = [b_1, ..., b_k] in balanced base 26, all
+    padded to the smallest common width.
+
+    >>> transcendental_code([1, 6]), transcendental_code([-6, 12, -19, 26])
+    ('ot', 'nhnzmuon')
+    """
+    width = max(len(balanced_code(b)) for b in lower)
+    return "".join(balanced_code(b, width) for b in lower)
+
+
+def transcendental_coefficients(code, k):
+    """
+    Inverse of :func:`transcendental_code`, for a code of ``k`` coefficients.
+    Raises a ValueError if ``code`` is not in canonical form.
+    """
+    if not code or len(code) % k:
+        raise ValueError("the transcendental code must have a multiple of %s letters" % k)
+    width = len(code) // k
+    chunks = [code[i:i + width] for i in range(0, len(code), width)]
+    if width > 1 and all(c[0] == "n" for c in chunks):
+        raise ValueError("the transcendental code is padded more than necessary")
+    return [balanced_value(c) for c in chunks]
 
 
 # ----------------------------------------------------------------------
@@ -292,7 +356,7 @@ def split_cyclotomic(coeffs):
 # ----------------------------------------------------------------------
 # Labels
 
-LABEL_RE = re.compile(r"^([1-9]\d*)\.(0|[1-9]\d*)\.([a-z]+)(?:\.([a-z]+(?:_[a-z]+)*))?$")
+LABEL_RE = re.compile(r"^([1-9]\d*)\.(0|[1-9]\d*)\.([a-z]+)(?:\.([a-z]+))?$")
 
 
 def poly_to_label(coeffs):
@@ -301,7 +365,7 @@ def poly_to_label(coeffs):
     (constant term first, length 23).
 
     >>> poly_to_label(poly_mul(cyclotomic_product([1] * 20), [2, 1, 2]))
-    '2.20.a.b'
+    '2.20.a.o'
     >>> poly_to_label([2] + [0]*21 + [2])  # 2 Phi_4 Phi_44
     '2.22.dilx'
     """
@@ -318,7 +382,7 @@ def poly_to_label(coeffs):
         raise ValueError("transcendental part must be palindromic with constant term q")
     label = "%s.%s.%s" % (q, rho, cremona_letter_code(cyclotomic_index(orders)))
     if d:
-        label += "." + "_".join(signed_cremona_letter_code(b) for b in trans[1:d // 2 + 1])
+        label += "." + transcendental_code(trans[1:d // 2 + 1])
     return label
 
 
@@ -331,7 +395,7 @@ def parse_label(label):
     """
     match = LABEL_RE.fullmatch(label)
     if not match:
-        raise ValueError("labels have the form q.rho.c.b1_..._bk")
+        raise ValueError("labels have the form q.rho.c.t")
     q, rho, c, codes = match.groups()
     q, rho = int(q), int(rho)
     if q < 2:
@@ -344,12 +408,14 @@ def parse_label(label):
     if idx >= num_cyclotomic_parts(rho):
         raise ValueError("there are only %s cyclotomic parts of degree %s" % (num_cyclotomic_parts(rho), rho))
     k = (DEGREE - rho) // 2
-    codes = codes.split("_") if codes else []
-    if len(codes) != k:
-        raise ValueError("geometric Picard rank %s needs %s transcendental coefficient codes" % (rho, k))
-    lower = [signed_class_to_int(b) for b in codes]
-    if [signed_cremona_letter_code(b) for b in lower] != codes:
-        raise ValueError("coefficient codes must not have leading a's (other than a sign)")
+    if not k:
+        if codes:
+            raise ValueError("when rho = %s there is no transcendental part" % DEGREE)
+        lower = []
+    elif not codes:
+        raise ValueError("geometric Picard rank %s needs a transcendental part" % rho)
+    else:
+        lower = transcendental_coefficients(codes, k)
     trans = [q] + lower + lower[:-1][::-1] + [q] if k else [q]
     return q, cyclotomic_orders(rho, idx), trans
 
@@ -371,5 +437,6 @@ def label_sort_key(label):
     and then the transcendental coefficients.
     """
     parts = label.split(".")
-    codes = parts[3].split("_") if len(parts) > 3 else []
-    return (int(parts[0]), int(parts[1]), class_to_int(parts[2])) + tuple(signed_class_to_int(b) for b in codes)
+    k = (DEGREE - int(parts[1])) // 2
+    lower = transcendental_coefficients(parts[3], k) if k else []
+    return (int(parts[0]), int(parts[1]), class_to_int(parts[2])) + tuple(lower)

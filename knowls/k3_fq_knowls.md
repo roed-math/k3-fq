@@ -27,20 +27,22 @@ after the hypergeometric line.
 
 **Title:** Labels for motives of K3 type over finite fields
 
-The label of a class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over $\F_q$ has the form **q.ρ.c.b1_b2_..._bk**.  It describes the factorization $P(T) = C(T)\,P_T(T)$ into the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} and the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }}.  Here
+The label of a class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over $\F_q$ has the form **q.ρ.c.t**.  It describes the factorization $P(T) = C(T)\,P_T(T)$ into the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} and the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }}.  Here
 
 - **q** is the cardinality of the base field $\F_q$;
 - **ρ** is the {{ KNOWL('k3.fq.geometric_picard_rank', 'geometric Picard rank') }} $\bar\rho = \deg C$, which is even, and $k = (22 - \bar\rho)/2$;
 - **c** encodes the cyclotomic part, as described below;
-- **b1, ..., bk** encode the coefficients $b_1, \ldots, b_k$ of the transcendental part
+- **t** encodes the coefficients $b_1, \ldots, b_k$ of the transcendental part
 $$P_T(T) = q + b_1 T + \cdots + b_k T^k + \cdots + b_1 T^{2k-1} + q T^{2k},$$
-as in the {{ KNOWL('av.fq.lmfdb_label', 'labels of isogeny classes of abelian varieties') }}: nonnegative integers are written in base 26 with the digits a, b, ..., z (where a = 0), and negative integers get a leading a.
+as described below.
 
-Write $C(T) = (1-T)^{e_1}\prod_{m \ge 2}\Phi_m(T)^{e_m}$, where $m$ runs over the 43 integers with $\varphi(m) \le 22$.  List the exponent vectors $(e_1, e_2, e_3, \ldots)$ with $\sum_m e_m\varphi(m) = \bar\rho$ in decreasing lexicographic order, numbered from $0$.  Then **c** is the number of $C(T)$ in this list, written in base 26 as above.  For example, `a` means $C(T) = (1-T)^{\bar\rho}$, so that the {{ KNOWL('k3.fq.picard_rank', 'Picard rank') }} over $\F_q$ is already $\bar\rho$.  For $\bar\rho = 2$, the six cyclotomic parts $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$ have codes a, b, c, d, e, f.  There are $60{,}280$ cyclotomic parts of degree $22$, so **c** has at most four letters.
+Write $C(T) = (1-T)^{e_1}\prod_{m \ge 2}\Phi_m(T)^{e_m}$, where $m$ runs over the 43 integers with $\varphi(m) \le 22$.  List the exponent vectors $(e_1, e_2, e_3, \ldots)$ with $\sum_m e_m\varphi(m) = \bar\rho$ in decreasing lexicographic order, numbered from $0$.  Then **c** is the number of $C(T)$ in this list, written in base 26 with the digits a, b, ..., z (where a = 0).  For example, `a` means $C(T) = (1-T)^{\bar\rho}$, so that the {{ KNOWL('k3.fq.picard_rank', 'Picard rank') }} over $\F_q$ is already $\bar\rho$.  For $\bar\rho = 2$, the six cyclotomic parts $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$ have codes a, b, c, d, e, f.  There are $60{,}280$ cyclotomic parts of degree $22$, so **c** has at most four letters.
+
+Each coefficient $b_i$ is written in *balanced* base 26, where the letters a, b, ..., z stand for the digits $-13, -12, \ldots, 12$.  So n = 0, o = 1, p = 2, ..., z = 12, and m = $-1$, l = $-2$, ..., a = $-13$; numbers outside this range take more letters, for instance oa = $26 - 13 = 13$ and mz = $-26 + 12 = -14$.  Every integer has a unique such expansion, and no sign is needed.  The codes for $b_1, \ldots, b_k$ are then padded with leading n's (that is, zeros) to a common width $w$, the smallest that fits all of them, and concatenated.  So **t** has $kw$ letters, and $w$ is its length divided by $k$.  Usually $w = 1$, with one letter per coefficient: over $\F_2$ this holds for more than $98\%$ of the transcendental parts of each degree up to $16$.
 
 The label determines $P(T)$.  The {{ KNOWL('k3.fq.sign', 'sign') }} is $\varepsilon = (-1)^{e_1}$, so it is not part of the label.  When $\bar\rho = 22$ (the {{ KNOWL('k3.fq.newton_polygon', 'supersingular') }} case) there is no transcendental part, and the label is just **q.22.c**.
 
-For example, $2(1-T)^{22}$ and $2(1-T)^{21}(1+T)$ are supersingular over $\F_2$, with labels `2.22.a` and `2.22.b`.  Over $\F_4$, the class of $(1-T)^{16}\,\Phi_4(T)\,(4 + T + 6T^2 + T^3 + 4T^4)$ has $\bar\rho = 18$, and $(1-T)^{16}\Phi_4$ is number $4$ in the list, so its label is `4.18.e.b_g`.
+For example, $2(1-T)^{22}$ and $2(1-T)^{21}(1+T)$ are supersingular over $\F_2$, with labels `2.22.a` and `2.22.b`.  Over $\F_4$, the class of $(1-T)^{16}\,\Phi_4(T)\,(4 + T + 6T^2 + T^3 + 4T^4)$ has $\bar\rho = 18$, and $(1-T)^{16}\Phi_4$ is number $4$ in the list, so its label is `4.18.e.ot`.  Over $\F_2$, the class of $(1-T)^6 P_T(T)$, where $P_T$ has degree $16$ and $b_1, \ldots, b_8 = 1, 0, -1, -1, -1, 1, 1, 1$, has label `2.6.a.onmmmooo`.  If one coefficient needs two letters, they all get two: over $\F_4$, $(1-T)^{18}(2 - 3T + 2T^2)^2$ has $b_1 = -12$ and $b_2 = 17$, and label `4.18.a.nboe`.
 
 Labels are ordered by $q$, then $\bar\rho$, then the number encoded by **c**, then $b_1, \ldots, b_k$.
 
@@ -350,7 +352,7 @@ The candidates were enumerated with Oscar's machinery for lattices with isometry
 
 **Title:** Find a motive of K3 type
 
-To find a specific class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over a finite field, enter either its {{ KNOWL('k3.fq.lmfdb_label', 'label') }}, such as `2.22.a` or `4.18.e.b_g`, or its polynomial: either $P(T)$ (with constant term $q$) or the {{ KNOWL('k3.fq.l_polynomial', 'L-polynomial') }} $L(T) = q^{-1}P(qT)$ (with constant term $1$), as a polynomial of degree $22$ in one variable, such as `2*(1-T)^22`, or as the list of its 23 coefficients, constant term first.
+To find a specific class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over a finite field, enter either its {{ KNOWL('k3.fq.lmfdb_label', 'label') }}, such as `2.22.a` or `4.18.e.ot`, or its polynomial: either $P(T)$ (with constant term $q$) or the {{ KNOWL('k3.fq.l_polynomial', 'L-polynomial') }} $L(T) = q^{-1}P(qT)$ (with constant term $1$), as a polynomial of degree $22$ in one variable, such as `2*(1-T)^22`, or as the list of its 23 coefficients, constant term first.
 
 ## k3.fq.initial_coefficients
 

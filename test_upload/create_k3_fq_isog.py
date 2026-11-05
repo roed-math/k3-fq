@@ -18,7 +18,7 @@ search_columns = {
 }
 
 col_description = {
-    'label': 'label `q.ρ.c.b1_..._bk`, as above',
+    'label': 'label `q.ρ.c.t`, as above',
     'q': 'cardinality of the base field',
     'p': 'characteristic of the base field',
     'r': 'degree of the base field over its prime field, so that $q = p^r$',
