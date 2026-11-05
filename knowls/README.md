@@ -5,7 +5,10 @@ the `k3fq` branch, url `/Motive/K3/Fq/`), in the format read by
 `db.knowldb.yaml_import`:
 
 - `k3_knowls.yaml`: the definitions.  General K3 notions have ids `k3.*`, and
-  notions specific to finite fields have ids `k3.fq.*`.
+  notions specific to finite fields have ids `k3.fq.*`.  A few supporting
+  definitions that are not specific to K3 surfaces use the existing categories:
+  `mot.pure`, `mot.weight`, `mot.rank`, `ag.neron_severi`, `ag.tate_conjecture`,
+  `ag.formal_brauer_group` and `ag.fq.zeta_function`.
 - `k3_rcs_knowls.yaml`: the source, acknowledgment, citation, completeness and
   reliability pages (`rcs.*.k3.fq`, following the other sections).  The
   acknowledgment and citation pages still have TODOs.

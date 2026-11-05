@@ -2,37 +2,101 @@
 - id: k3.motive
   title: Motive of K3 type
   content: |-
-    A **motive of K3 type** is a pure motive $M$ of weight $0$ and rank $22$ that looks like $H^2(X)(1)$ for a K3 surface $X$: in characteristic $0$ its Hodge numbers are $h^{1,-1} = h^{-1,1} = 1$ and $h^{0,0} = 20$.  The main sources are
+    A **motive of K3 type** is a {{ KNOWL('mot.pure', 'pure motive') }} $M$ of {{ KNOWL('mot.weight', 'weight') }} $0$ and {{ KNOWL('mot.rank', 'rank') }} $22$ that looks like $H^2(X)(1)$ for a {{ KNOWL('k3.surface', 'K3 surface') }} $X$: in characteristic $0$ its {{ KNOWL('hmsurface.hodge_numbers', 'Hodge numbers') }} are $h^{1,-1} = h^{-1,1} = 1$ and $h^{0,0} = 20$.  The main sources are
 
     - a K3 surface $X$, with $M = H^2(X)(1)$;
     - a cubic fourfold $Y \subset \mathbb{P}^5$, with $M = H^4_{\mathrm{prim}}(Y)(2)$;
-    - a Gushel–Mukai fourfold $Y$, with $M = H^4_{\mathrm{van}}(Y)(2)$;
-    - a Verra fourfold $Y$, a double cover of $\mathbb{P}^2 \times \mathbb{P}^2$ branched along a divisor of bidegree $(2,2)$, with $M$ a $22$-dimensional piece of $H^4(Y)(2)$;
-    - a **noncommutative K3 surface** (a K3 category), such as a twisted K3 surface or the Kuznetsov component of one of these fourfolds, with $M$ the K3-type part of its Mukai motive.
+    - a {{ KNOWL('k3.gushel_mukai_fourfold', 'Gushel–Mukai fourfold') }} $Y$, with $M = H^4_{\mathrm{van}}(Y)(2)$;
+    - a {{ KNOWL('k3.verra_fourfold', 'Verra fourfold') }} $Y$, with $M$ a $22$-dimensional piece of $H^4(Y)(2)$;
+    - a **noncommutative K3 surface** (a K3 category), such as a {{ KNOWL('k3.twisted_k3_surface', 'twisted K3 surface') }} or the {{ KNOWL('k3.kuznetsov_component', 'Kuznetsov component') }} of one of these fourfolds, with $M$ the K3-type part of its Mukai motive.
 - id: k3.picard_rank
   title: Picard rank
   content: |-
-    The **Picard rank** $\rho$ of a K3 surface $X$ is the rank of its Néron–Severi group $\mathrm{NS}(X)$.
+    The **Picard rank** $\rho$ of a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ is the rank of its {{ KNOWL('ag.neron_severi', 'Néron–Severi group') }} $\mathrm{NS}(X)$.
 
-    For a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ with polynomial $P(T)$, the Picard rank is the multiplicity of $1$ as a root of $P(T)$.  For a K3 surface over $\F_q$ the two definitions agree, by the Tate conjecture (a theorem for K3 surfaces).
+    For a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ with polynomial $P(T)$, the Picard rank is the multiplicity of $1$ as a root of $P(T)$.  For a K3 surface over $\F_q$ the two definitions agree, by the {{ KNOWL('ag.tate_conjecture', 'Tate conjecture') }} (a theorem for K3 surfaces).
 - id: k3.geometric_picard_rank
   title: Geometric Picard rank
   content: |-
-    The **geometric Picard rank** $\bar\rho$ of a K3 surface $X$ over a field $k$ is the {{ KNOWL('k3.picard_rank', 'Picard rank') }} of $X_{\bar k}$.
+    The **geometric Picard rank** $\bar\rho$ of a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ over a field $k$ is the {{ KNOWL('k3.picard_rank', 'Picard rank') }} of $X_{\bar k}$, where $\bar k$ is an algebraic closure of $k$.
 
-    For a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$, it is the number of roots of $P(T)$ that are roots of unity, that is, the degree of its {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }}.  By the Tate conjecture this agrees with the first definition.  Over a finite field $\bar\rho$ is even, and $\bar\rho = 22$ exactly when the class is {{ KNOWL('k3.fq.newton_polygon', 'supersingular') }}.
+    For a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$, it is the number of roots of $P(T)$ that are roots of unity, that is, the degree of its {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }}.  By the {{ KNOWL('ag.tate_conjecture', 'Tate conjecture') }} this agrees with the first definition.  Over a finite field $\bar\rho$ is even, and $\bar\rho = 22$ exactly when the class is {{ KNOWL('k3.fq.newton_polygon', 'supersingular') }}.
 - id: k3.height
   title: Height of a K3 surface
   content: |-
-    The **height** $h$ of a K3 surface $X$ over a field of characteristic $p$ is the height of its formal Brauer group (Artin–Mazur).  Either $1 \le h \le 10$, or $h = \infty$ and $X$ is **supersingular**; $X$ is **ordinary** when $h = 1$.  If $h$ is finite, the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }} is at most $22 - 2h$.
+    The **height** $h$ of a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ over a field of characteristic $p$ is the height of its {{ KNOWL('ag.formal_brauer_group', 'formal Brauer group') }}.  Either $1 \le h \le 10$, or $h = \infty$ and $X$ is **supersingular**; $X$ is **ordinary** when $h = 1$.  If $h$ is finite, the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }} is at most $22 - 2h$.
 
     Over $\F_q$, the height is the number of slopes less than $1$ of the {{ KNOWL('k3.fq.newton_polygon', 'Newton polygon') }}, and the LMFDB uses this to define the height of any {{ KNOWL('k3.fq.motive', 'motive of K3 type') }}.
+- id: mot.pure
+  title: Pure motive
+  content: |-
+    A **pure motive** over a field $k$ is, informally, a piece of the cohomology of a smooth projective variety over $k$ cut out by an algebraic correspondence.  In Grothendieck's construction, a pure motive is a triple $(X, e, n)$, where $X$ is smooth and projective over $k$, $e$ is an idempotent correspondence on $X$, and $n \in \Z$ records a Tate twist.  A pure motive $M$ has realizations, such as its $\ell$-adic cohomology $M_\ell$ and, when $k \subseteq \C$, its Betti cohomology with a Hodge structure; over a finite field, Frobenius acts on $M_\ell$ \cite{wikipedia:Motive_(algebraic_geometry)}.
+- id: mot.weight
+  title: Weight of a motive
+  content: |-
+    A {{ KNOWL('mot.pure', 'pure motive') }} $M$ has **weight** $w$ if it is a piece of $H^{w + 2n}(X)(n)$ for some smooth projective $X$ and $n \in \Z$: the cohomology $H^i(X)$ has weight $i$, and a Tate twist $M(n)$ of a motive of weight $w$ has weight $w - 2n$.  Over $\F_q$, the eigenvalues of Frobenius on the $\ell$-adic realization of a motive of weight $w$ have absolute value $q^{w/2}$, by Deligne's proof of the Weil conjectures.  For example, $H^2(X)(1)$ has weight $0$ for any surface $X$.
+- id: mot.rank
+  title: Rank of a motive
+  content: |-
+    The **rank** of a {{ KNOWL('mot.pure', 'pure motive') }} $M$ is the dimension of any of its realizations, for example of its $\ell$-adic realization over $\Q_\ell$.  For a {{ KNOWL('k3.surface', 'K3 surface') }} $X$, the motive $H^2(X)$ has rank $22$.
+- id: k3.surface
+  title: K3 surface
+  content: |-
+    A **K3 surface** over a field $k$ is a smooth projective surface $X$ over $k$ with trivial canonical bundle $\omega_X \cong \mathcal{O}_X$ and $H^1(X, \mathcal{O}_X) = 0$.  Examples include smooth quartic surfaces in $\mathbb{P}^3$ and, in characteristic other than $2$, double covers of $\mathbb{P}^2$ branched along a smooth sextic curve and Kummer surfaces.
+
+    The second cohomology of a K3 surface has rank $22$.  Over $\C$, $H^2(X, \Z)$ with the cup product is the even unimodular lattice of signature $(3, 19)$, and the {{ KNOWL('hmsurface.hodge_numbers', 'Hodge numbers') }} are $h^{2,0} = h^{0,2} = 1$ and $h^{1,1} = 20$ \cite{doi:10.1017/CBO9781316594193}.
+- id: k3.gushel_mukai_fourfold
+  title: Gushel–Mukai fourfold
+  content: |-
+    A **Gushel–Mukai fourfold** is a smooth fourfold $Y = \mathrm{C}\mathrm{Gr}(2,5) \cap \mathbb{P}^8 \cap Q$, where $\mathrm{C}\mathrm{Gr}(2,5) \subset \mathbb{P}^{10}$ is the cone over the Grassmannian $\mathrm{Gr}(2,5) \subset \mathbb{P}^9$ in its Plücker embedding, $\mathbb{P}^8$ is a linear subspace and $Q$ is a quadric \cite{arxiv:1510.05448}.  If $\mathbb{P}^8$ does not contain the vertex of the cone, then $Y$ is a quadric section of a hyperplane section of $\mathrm{Gr}(2,5)$; otherwise it is a double cover of a codimension $2$ linear section of $\mathrm{Gr}(2,5)$, branched along a quadric section.
+
+    Its middle cohomology $H^4(Y)$ has rank $24$, with $h^{3,1} = h^{1,3} = 1$.  The orthogonal complement $H^4_{\mathrm{van}}(Y)$ of the classes pulled back from $\mathrm{Gr}(2,5)$ has rank $22$, and $H^4_{\mathrm{van}}(Y)(2)$ is a {{ KNOWL('k3.motive', 'motive of K3 type') }}.
+- id: k3.verra_fourfold
+  title: Verra fourfold
+  content: |-
+    A **Verra fourfold** $Y$ is a double cover of $\mathbb{P}^2 \times \mathbb{P}^2$ branched along a smooth divisor of bidegree $(2, 2)$.  Its middle cohomology $H^4(Y)$ has rank $24$, with $h^{3,1} = h^{1,3} = 1$, and contains a {{ KNOWL('k3.motive', 'motive of K3 type') }} \cite{arxiv:1706.08955}.
+- id: k3.twisted_k3_surface
+  title: Twisted K3 surface
+  content: |-
+    A **twisted K3 surface** is a pair $(X, \alpha)$ consisting of a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ and a class $\alpha$ in its Brauer group $\mathrm{Br}(X)$.  The derived category $D^b(X, \alpha)$ of $\alpha$-twisted coherent sheaves is a K3 category, that is, a noncommutative K3 surface \cite{arxiv:math/0409030}.
+- id: k3.kuznetsov_component
+  title: Kuznetsov component
+  content: |-
+    The derived category of a cubic fourfold $Y \subset \mathbb{P}^5$ has a semiorthogonal decomposition
+    $$D^b(Y) = \langle \mathcal{A}_Y, \mathcal{O}_Y, \mathcal{O}_Y(1), \mathcal{O}_Y(2)\rangle.$$
+    The **Kuznetsov component** $\mathcal{A}_Y$ is a K3 category: its Serre functor is the shift by $2$, and its Hochschild homology is that of a {{ KNOWL('k3.surface', 'K3 surface') }} \cite{arxiv:0808.3351}.  {{ KNOWL('k3.gushel_mukai_fourfold', 'Gushel–Mukai fourfolds') }} \cite{arxiv:1605.06568} and other Fano fourfolds of K3 type have similar components.  For some special fourfolds, the Kuznetsov component is equivalent to the derived category of a K3 surface or a {{ KNOWL('k3.twisted_k3_surface', 'twisted K3 surface') }}.
+- id: ag.neron_severi
+  title: Néron–Severi group
+  content: |-
+    The **Néron–Severi group** $\mathrm{NS}(X)$ of a smooth projective variety $X$ is the group of divisors on $X$ modulo algebraic equivalence.  It is a finitely generated abelian group, and its rank is the **Picard rank** of $X$.  For a {{ KNOWL('k3.surface', 'K3 surface') }}, $\mathrm{NS}(X)$ is equal to the Picard group $\mathrm{Pic}(X)$; it is torsion free, and with the intersection pairing it is an even lattice of signature $(1, \rho - 1)$, where $\rho$ is the {{ KNOWL('k3.picard_rank', 'Picard rank') }}.
+- id: ag.tate_conjecture
+  title: Tate conjecture
+  content: |-
+    Let $X$ be a smooth projective variety over a finite field $\F_q$, and $\ell \nmid q$ a prime.  The **Tate conjecture** for divisors on $X$ asserts that the cycle class map
+    $$\mathrm{NS}(X) \otimes \Q_\ell \to H^2(X_{\overline{\F}_q}, \Q_\ell(1))^{\mathrm{Gal}(\overline{\F}_q/\F_q)}$$
+    is surjective, where $\mathrm{NS}(X)$ is the {{ KNOWL('ag.neron_severi', 'Néron–Severi group') }}.  When Frobenius acts semisimply on $H^2$, as it does for K3 surfaces, it says that the Picard rank of $X$ is the multiplicity of $q$ as an eigenvalue of Frobenius on $H^2(X_{\overline{\F}_q}, \Q_\ell)$.
+
+    For {{ KNOWL('k3.surface', 'K3 surfaces') }} it is a theorem: Nygaard and Nygaard–Ogus proved it for K3 surfaces of finite height in characteristic at least $5$, and Charles, Maulik, Madapusi Pera and Kim–Madapusi Pera in general \cite{arxiv:1206.4002,arxiv:1301.6326,arxiv:1512.02540}.
+- id: ag.formal_brauer_group
+  title: Formal Brauer group
+  content: |-
+    Let $X$ be a variety over a perfect field $k$ of characteristic $p > 0$.  Artin and Mazur defined the **formal Brauer group** $\widehat{\mathrm{Br}}_X$ as the functor on local Artinian $k$-algebras $A$ with residue field $k$ given by
+    $$\widehat{\mathrm{Br}}_X(A) = \ker\left(H^2(X_A, \mathbb{G}_m) \to H^2(X, \mathbb{G}_m)\right)$$
+    \cite{mr:0457458,doi:10.24033/asens.1322}.  For a {{ KNOWL('k3.surface', 'K3 surface') }} it is a one-dimensional formal group with tangent space $H^2(X, \mathcal{O}_X)$, and its {{ KNOWL('k3.height', 'height') }} is either $\infty$ or between $1$ and $10$.
+- id: ag.fq.zeta_function
+  title: Zeta function of a variety over a finite field
+  content: |-
+    The **zeta function** of a variety $X$ over $\F_q$ is the power series
+    $$Z(X, T) = \exp\left(\sum_{n \ge 1} \#X(\F_{q^n})\frac{T^n}{n}\right),$$
+    where the $\#X(\F_{q^n})$ are its {{ KNOWL('ag.fq.point_counts', 'point counts') }}.  By the Weil conjectures, proved by Dwork and Deligne, it is a rational function.  If $X$ is smooth and projective of dimension $d$, then
+    $$Z(X, T) = \prod_{i=0}^{2d} P_i(T)^{(-1)^{i+1}}, \qquad P_i(T) = \det\left(1 - \mathrm{Frob}\,T \mid H^i(X_{\overline{\F}_q}, \Q_\ell)\right),$$
+    for any prime $\ell \nmid q$, and the reciprocal roots of $P_i$ have absolute value $q^{i/2}$.
 - id: k3.fq.motive
   title: Motive of K3 type over a finite field
   content: |-
     A {{ KNOWL('k3.motive', 'motive of K3 type') }} $M$ over $\F_q$ determines the polynomial
     $$P(T) = q\det(1 - \mathrm{Frob}\, T \mid M) = q\prod_{i=1}^{22}(1 - \alpha_i T) = q + a_1 T + \cdots + a_{22}T^{22} \in \Z[T],$$
-    whose **normalized Frobenius eigenvalues** $\alpha_i$ lie on the unit circle.  Its coefficients satisfy $a_{22-i} = \varepsilon a_i$, where $\varepsilon = \pm 1$ is the {{ KNOWL('k3.fq.sign', 'sign') }}.  For a K3 surface $X$, the L-polynomial $L(T) = \det(1 - \mathrm{Frob}\, T \mid H^2(X_{\overline{\F}_q}, \Q_\ell))$ is $q^{-1}P(qT)$, and the zeta function of $X$ is $1/((1-T)L(T)(1-q^2T))$.
+    whose **normalized Frobenius eigenvalues** $\alpha_i$ lie on the unit circle.  Its coefficients satisfy $a_{22-i} = \varepsilon a_i$, where $\varepsilon = \pm 1$ is the {{ KNOWL('k3.fq.sign', 'sign') }}.  For a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ and a prime $\ell \nmid q$, the L-polynomial $L(T) = \det(1 - \mathrm{Frob}\, T \mid H^2(X_{\overline{\F}_q}, \Q_\ell))$ is $q^{-1}P(qT)$, and the {{ KNOWL('ag.fq.zeta_function', 'zeta function') }} of $X$ is $1/((1-T)L(T)(1-q^2T))$.
 
     The LMFDB has one class for each polynomial of this shape, whether or not it comes from a variety; see {{ KNOWL('k3.fq.realizability', 'realizability') }}.
 - id: k3.fq.lmfdb_label
@@ -45,7 +109,7 @@
     - **c** encodes the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} $C(T)$;
     - **t** encodes the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }} $q + b_1 T + \cdots + b_k T^k + \cdots + b_1 T^{2k-1} + qT^{2k}$, where $k = (22 - \bar\rho)/2$.
 
-    Write $C(T) = (1-T)^{e_1}\prod_{m \ge 2}\Phi_m(T)^{e_m}$.  Sort the exponent vectors $(e_1, e_2, e_3, \ldots)$ with $\sum_m e_m\varphi(m) = \bar\rho$ in decreasing lexicographic order and number them from $0$.  Then **c** is the number of $C(T)$, written in base 26 with digits a–z (a = 0).  So **c** = a means $C(T) = (1-T)^{\bar\rho}$, and for $\bar\rho = 2$ the codes a, b, c, d, e, f stand for $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$.
+    Write $C(T) = (1-T)^{e_1}\prod_{m \ge 2}\Phi_m(T)^{e_m}$, where $\Phi_m$ is the $m$th cyclotomic polynomial.  Sort the exponent vectors $(e_1, e_2, e_3, \ldots)$ with $\sum_m e_m\varphi(m) = \bar\rho$, where $\varphi$ is Euler's totient function, in decreasing lexicographic order and number them from $0$.  Then **c** is the number of $C(T)$, written in base 26 with digits a–z (a = 0).  So **c** = a means $C(T) = (1-T)^{\bar\rho}$, and for $\bar\rho = 2$ the codes a, b, c, d, e, f stand for $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$.
 
     In **t**, each $b_i$ is written in balanced base 26, where a, b, ..., z stand for $-13, -12, \ldots, 12$ (so n = 0, o = 1, m = $-1$, and oa = 13).  The codes are padded with leading n's to the smallest common width and concatenated; usually each $b_i$ is a single letter.  When $\bar\rho = 22$ there is no transcendental part, and the label is **q.22.c**.
 
@@ -63,19 +127,19 @@
   content: |-
     The **cyclotomic part** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} with polynomial $P(T)$ is the product
     $$C(T) = (1-T)^{e_1}\prod_{m \ge 2}\Phi_m(T)^{e_m}$$
-    of the cyclotomic factors of $P(T)$, normalized so that $C(0) = 1$.  Here $e_1$ is the {{ KNOWL('k3.picard_rank', 'Picard rank') }} and $\deg C$ is the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}.  For a K3 surface $X$, the roots of $C(T)$ are the eigenvalues of Frobenius on $\mathrm{NS}(X_{\overline{\F}_q})$.  The quotient $P(T)/C(T)$ is the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }}.
+    of the cyclotomic factors of $P(T)$, normalized so that $C(0) = 1$; here $\Phi_m$ is the $m$th cyclotomic polynomial.  Here $e_1$ is the {{ KNOWL('k3.picard_rank', 'Picard rank') }} and $\deg C$ is the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}.  For a {{ KNOWL('k3.surface', 'K3 surface') }} $X$, the roots of $C(T)$ are the eigenvalues of Frobenius on the {{ KNOWL('ag.neron_severi', 'Néron–Severi group') }} $\mathrm{NS}(X_{\overline{\F}_q})$.  The quotient $P(T)/C(T)$ is the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }}.
 - id: k3.fq.transcendental_part
   title: Transcendental part of a motive of K3 type
   content: |-
-    The **transcendental part** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} is $P_T(T) = P(T)/C(T)$, where $C(T)$ is the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }}.  It has integer coefficients, constant term $q$ and degree $22 - \bar\rho$, and none of its roots is a root of unity.  For a supersingular class, $P_T = q$.
+    The **transcendental part** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} is $P_T(T) = P(T)/C(T)$, where $C(T)$ is the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }}.  It has integer coefficients, constant term $q$ and degree $22 - \bar\rho$, where $\bar\rho$ is the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}, and none of its roots are roots of unity.  For a supersingular class, $P_T = q$.
 
-    When $q$ is prime, $P_T$ is irreducible.  Over other fields it can be reducible, for example a power of an irreducible polynomial.  For each irreducible factor $f$, the LMFDB gives the {{ KNOWL('nf.cm_field', 'CM field') }} $\Q[T]/(f)$ and the Galois group of $f$.  A search by number field or Galois group matches a class if one of its factors matches.
+    When $q$ is prime, $P_T$ is irreducible.  Over other fields it can be reducible, for example a power of an irreducible polynomial.  For a {{ KNOWL('k3.surface', 'K3 surface') }} that is not supersingular, $P_T$ is always a power of an irreducible polynomial \cite{arxiv:1507.08547}.  For each irreducible factor $f$, the LMFDB gives the {{ KNOWL('nf.cm_field', 'CM field') }} $\Q[T]/(f)$ and the Galois group of $f$.  A search by number field or Galois group matches a class if one of its factors matches.
 - id: k3.fq.newton_polygon
   title: Newton polygon of a motive of K3 type
   content: |-
-    The **Newton polygon** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ is the $q$-adic {{ KNOWL('lf.newton_polygon', 'Newton polygon') }} of its L-polynomial $L(T) = q^{-1}P(qT)$, with slopes in $[0, 2]$.  For a K3 surface of {{ KNOWL('k3.height', 'height') }} $h$, the slopes are $1 - \frac{1}{h}$ ($h$ times), $1$ ($22 - 2h$ times) and $1 + \frac{1}{h}$ ($h$ times), or all equal to $1$ if $h = \infty$.  A Newton polygon of this shape is a **K3 Newton polygon**.  Over a prime field every class has a K3 Newton polygon, but over other fields some do not.
+    The **Newton polygon** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ is the $q$-adic {{ KNOWL('lf.newton_polygon', 'Newton polygon') }} of its L-polynomial $L(T) = q^{-1}P(qT)$, with slopes in $[0, 2]$.  For a {{ KNOWL('k3.surface', 'K3 surface') }} of {{ KNOWL('k3.height', 'height') }} $h$, the slopes are $1 - \frac{1}{h}$ ($h$ times), $1$ ($22 - 2h$ times) and $1 + \frac{1}{h}$ ($h$ times), or all equal to $1$ if $h = \infty$.  A Newton polygon of this shape is a **K3 Newton polygon**.  Over a prime field every class has a K3 Newton polygon, but over other fields some do not.
 
-    A class is **ordinary** if $0$ is a slope, equivalently if $p \nmid a_1$, and **supersingular** if every slope is $1$, equivalently if every root of $P(T)$ is a root of unity.
+    A class is **ordinary** if $0$ is a slope, equivalently if $p \nmid a_1$, where $p$ is the characteristic of $\F_q$ and $a_1$ is the coefficient of $T$ in $P(T)$, and **supersingular** if every slope is $1$, equivalently if every root of $P(T)$ is a root of unity.
 - id: k3.fq.newton_elevation
   title: Newton elevation of a motive of K3 type
   content: |-
@@ -89,7 +153,7 @@
 - id: k3.fq.geometric_extension_degree
   title: Geometric extension degree of a motive of K3 type
   content: |-
-    The **geometric extension degree** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} is the least common multiple $E$ of the $m$ such that $\Phi_m$ divides its {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} ($E = 1$ if there are none).  It is the smallest $n$ such that the {{ KNOWL('k3.picard_rank', 'Picard rank') }} over $\F_{q^n}$ equals the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}.  More precisely, the Picard rank over $\F_{q^n}$ is $\sum_{m \mid n} e_m\varphi(m)$, where $e_m$ is the multiplicity of $\Phi_m$.
+    The **geometric extension degree** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} is the least common multiple $E$ of the $m$ such that the $m$th cyclotomic polynomial $\Phi_m$ divides its {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} ($E = 1$ if there are none).  It is the smallest $n$ such that the {{ KNOWL('k3.picard_rank', 'Picard rank') }} over $\F_{q^n}$ equals the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}.  More precisely, the Picard rank over $\F_{q^n}$ is $\sum_{m \mid n} e_m\varphi(m)$, where $e_m$ is the multiplicity of $\Phi_m$ and $\varphi$ is Euler's totient function.
 - id: k3.fq.initial_coefficients
   title: Initial coefficients of a motive of K3 type
   content: |-
@@ -97,41 +161,41 @@
 - id: k3.fq.point_counts
   title: Point counts of varieties of K3 type
   content: |-
-    Let $\alpha_1, \ldots, \alpha_{22}$ be the normalized Frobenius eigenvalues of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$, and $t_n = \sum_i \alpha_i^n$.  By the Lefschetz trace formula, a K3 surface $X$ in the class has
+    Let $\alpha_1, \ldots, \alpha_{22}$ be the normalized Frobenius eigenvalues of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$, and $t_n = \sum_i \alpha_i^n$.  By the Lefschetz trace formula, a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ in the class has
     $$\#X(\F_{q^n}) = 1 + q^{2n} + q^n t_n,$$
-    so $\#X(\F_q) = 1 + q^2 - a_1$.  If the rest of its cohomology is spanned by Tate classes defined over $\F_q$, a fourfold $Y$ whose K3-type motive is in the class has $\#Y(\F_{q^n})$ equal to
+    so $\#X(\F_q) = 1 + q^2 - a_1$, where $P(T) = q + a_1T + \cdots$.  If the rest of its cohomology is spanned by Tate classes defined over $\F_q$, a fourfold $Y$ whose K3-type motive is in the class has $\#Y(\F_{q^n})$ equal to
 
     - $1 + q^n + q^{2n} + q^{3n} + q^{4n} + q^{2n}t_n$ for a cubic fourfold;
-    - $1 + q^n + 2q^{2n} + q^{3n} + q^{4n} + q^{2n}t_n$ for a Gushel–Mukai fourfold;
-    - $1 + 2q^n + 2q^{2n} + 2q^{3n} + q^{4n} + q^{2n}t_n$ for a Verra fourfold.
+    - $1 + q^n + 2q^{2n} + q^{3n} + q^{4n} + q^{2n}t_n$ for a {{ KNOWL('k3.gushel_mukai_fourfold', 'Gushel–Mukai fourfold') }};
+    - $1 + 2q^n + 2q^{2n} + 2q^{3n} + q^{4n} + q^{2n}t_n$ for a {{ KNOWL('k3.verra_fourfold', 'Verra fourfold') }}.
 
     These are computed for every class, whether or not such a variety exists, so they can be negative.  A class is **pointless** if $\#X(\F_q) = 0$.
 - id: k3.fq.count_conditions
   title: Conditions on point counts
   content: |-
-    A {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ has **nonnegative counts** if the {{ KNOWL('k3.fq.point_counts', 'point counts') }} $\#X(\F_{q^n})$ of a K3 surface in the class are nonnegative for all $n \ge 1$, and **count growth** if the numbers of closed points of each degree $n$,
+    A {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ has **nonnegative counts** if the {{ KNOWL('k3.fq.point_counts', 'point counts') }} $\#X(\F_{q^n})$ of a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ in the class are nonnegative for all $n \ge 1$, and **count growth** if the numbers of closed points of each degree $n$,
     $$\frac{1}{n}\sum_{d \mid n}\mu(n/d)\,\#X(\F_{q^d}),$$
-    are nonnegative.  Count growth implies nonnegative counts, and both are necessary for the class to contain a K3 surface.
+    are nonnegative, where $\mu$ is the Möbius function.  Count growth implies nonnegative counts, and both are necessary for the class to contain a K3 surface.
 - id: k3.fq.artin_tate
   title: Artin–Tate formula for motives of K3 type
   content: |-
     For a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} over $\F_q$ with {{ KNOWL('k3.picard_rank', 'Picard rank') }} $\rho$, the **Artin–Tate value** is the positive integer
     $$AT_1 = \left.\frac{P(T)}{(1-T)^{\rho}}\right|_{T=1},$$
-    and $AT_n$ is the same quantity for the base change to $\F_{q^n}$.  For a K3 surface $X$, the Artin–Tate formula (a theorem for K3 surfaces) gives $AT_1 = \#\mathrm{Br}(X) \cdot \lvert\mathrm{disc}\,\mathrm{NS}(X)\rvert$.
+    and $AT_n$ is the same quantity for the base change to $\F_{q^n}$.  For a {{ KNOWL('k3.surface', 'K3 surface') }} $X$, the Artin–Tate formula (a theorem for K3 surfaces, since the {{ KNOWL('ag.tate_conjecture', 'Tate conjecture') }} holds for them) gives $AT_1 = \#\mathrm{Br}(X) \cdot \lvert\mathrm{disc}\,\mathrm{NS}(X)\rvert$, where $\mathrm{Br}(X)$ is the Brauer group and $\mathrm{NS}(X)$ the {{ KNOWL('ag.neron_severi', 'Néron–Severi group') }}.
 
     Since $\#\mathrm{Br}(X)$ is a square, the **NS discriminant class** $(-1)^{\rho-1}\,\mathrm{sqf}(AT_1)$, where $\mathrm{sqf}$ denotes the squarefree part, is the class of $\mathrm{disc}\,\mathrm{NS}(X)$ in $\Q^\times/\Q^{\times 2}$.  It is defined when $\rho \ge 1$.
 - id: k3.fq.ej_condition
   title: Artin–Tate condition of Elsenhans and Jahnel
   content: |-
-    A {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} with polynomial $P(T)$ and {{ KNOWL('k3.picard_rank', 'Picard rank') }} $\rho$ satisfies the **Artin–Tate condition** of Elsenhans and Jahnel if $S(-1)$ is a square (possibly $0$), where $S(T) = P(T)/(1-T)^{\rho}$.  The polynomial of every K3 surface satisfies it.  When $1 + T$ does not divide $P(T)$, it says that $AT_1 AT_2$ is a square, where the $AT_n$ are the {{ KNOWL('k3.fq.artin_tate', 'Artin–Tate values') }}.  The test is the one used by Kedlaya and Sutherland \cite{mr:3540942,arxiv:1511.06945}.
+    A {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} with polynomial $P(T)$ and {{ KNOWL('k3.picard_rank', 'Picard rank') }} $\rho$ satisfies the **Artin–Tate condition** of Elsenhans and Jahnel if $S(-1)$ is a square (possibly $0$), where $S(T) = P(T)/(1-T)^{\rho}$.  The polynomial of every {{ KNOWL('k3.surface', 'K3 surface') }} satisfies it.  When $1 + T$ does not divide $P(T)$, it says that $AT_1 AT_2$ is a square, where the $AT_n$ are the {{ KNOWL('k3.fq.artin_tate', 'Artin–Tate values') }}.  The test is the one used by Kedlaya and Sutherland \cite{mr:3540942,arxiv:1511.06945}.
 - id: k3.fq.primitive
   title: Primitive motive of K3 type
   content: |-
-    A class of {{ KNOWL('k3.fq.motive', 'motives of K3 type') }} over $\F_q$ is **primitive** if it is not the {{ KNOWL('ag.base_change', 'base change') }} of a class over a proper subfield: there is no class over $\F_{q_0}$, with $q_0^d = q$ and $d > 1$, such that $q_0^d\prod_i(1 - \alpha_i^d T) = P(T)$.  Otherwise, the classes over subfields whose base change it is are its **primitive models**.
+    A class of {{ KNOWL('k3.fq.motive', 'motives of K3 type') }} over $\F_q$ is **primitive** if it is not the {{ KNOWL('ag.base_change', 'base change') }} of a class over a proper subfield: there is no class over $\F_{q_0}$, with $q_0^d = q$ and $d > 1$, such that $q_0^d\prod_i(1 - \alpha_i^d T) = P(T)$, where the $\alpha_i$ are the normalized Frobenius eigenvalues of that class.  Otherwise, the primitive classes over subfields whose base change it is are its **primitive models**.
 - id: k3.fq.realizability
   title: Realizability of a motive of K3 type
   content: |-
-    A class of {{ KNOWL('k3.fq.motive', 'motives of K3 type') }} over $\F_q$ is **realizable** by a type of object (a K3 surface, a cubic, Gushel–Mukai or Verra fourfold, a Kummer surface, or a noncommutative version of the first four; see {{ KNOWL('k3.motive', 'motives of K3 type') }}) if such an object over $\F_q$ has its K3-type motive in the class.  For each type the LMFDB records *yes*, *no* or *unknown*.
+    A class of {{ KNOWL('k3.fq.motive', 'motives of K3 type') }} over $\F_q$ is **realizable** by a type of object (a {{ KNOWL('k3.surface', 'K3 surface') }}, a cubic, {{ KNOWL('k3.gushel_mukai_fourfold', 'Gushel–Mukai') }} or {{ KNOWL('k3.verra_fourfold', 'Verra') }} fourfold, a Kummer surface, or a noncommutative version of the first four; see {{ KNOWL('k3.motive', 'motives of K3 type') }}) if such an object over $\F_q$ has its K3-type motive in the class.  For each type the LMFDB records *yes*, *no* or *unknown*.
 
     So far only necessary conditions have been applied.  A class cannot contain
 
@@ -141,15 +205,15 @@
 - id: k3.fq.twist
   title: Twists of motives of K3 type
   content: |-
-    Two classes of {{ KNOWL('k3.fq.motive', 'motives of K3 type') }} over $\F_q$ are **twists** if they become equal over a finite extension $\F_{q^n}$, as for {{ KNOWL('av.twist', 'abelian varieties') }}.  The **geometric class** of a class is the member of its twist class with the smallest {{ KNOWL('k3.fq.lmfdb_label', 'label') }}; its {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} is $(1-T)^{\bar\rho}$.
+    Two classes of {{ KNOWL('k3.fq.motive', 'motives of K3 type') }} over $\F_q$ are **twists** if they become equal over a finite extension $\F_{q^n}$, as for {{ KNOWL('av.twist', 'abelian varieties') }}.  The **geometric class** of a class is the member of its twist class with the smallest {{ KNOWL('k3.fq.lmfdb_label', 'label') }}; its {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} is $(1-T)^{\bar\rho}$, where $\bar\rho$ is the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}.
 
     The LMFDB records the number of twists (including the class itself) and, when it is at most $50$, each twist with a minimal degree $n$ over which the two classes become equal.  The **maximum twist degree** is the largest such $n$.
 - id: k3.fq.lattices
   title: Candidate Néron–Severi lattices
   content: |-
-    For a K3 surface $X$ over $\F_q$, Frobenius acts on the even {{ KNOWL('lattice.definition', 'lattice') }} $N = \mathrm{NS}(X_{\overline{\F}_q})$, of {{ KNOWL('lattice.signature', 'signature') }} $(1, \bar\rho - 1)$, by an isometry $\varphi$ of finite order, with characteristic polynomial given by the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }}, and $N^\varphi = \mathrm{NS}(X)$.
+    For a {{ KNOWL('k3.surface', 'K3 surface') }} $X$ over $\F_q$, Frobenius acts on its geometric {{ KNOWL('ag.neron_severi', 'Néron–Severi group') }} $N = \mathrm{NS}(X_{\overline{\F}_q})$, an even {{ KNOWL('lattice.definition', 'lattice') }} of {{ KNOWL('lattice.signature', 'signature') }} $(1, \bar\rho - 1)$, where $\bar\rho$ is the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }}, by an isometry $\varphi$ of finite order, with characteristic polynomial given by the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }}, and the invariant sublattice $N^\varphi$ is $\mathrm{NS}(X)$.
 
-    The **candidate Néron–Severi lattices** of a class are the pairs $(N, \varphi)$, up to isomorphism, that satisfy the known necessary conditions: from the {{ KNOWL('k3.fq.artin_tate', 'Artin–Tate formula') }}, from $\ell$-adic and crystalline cohomology, and the existence of a $\varphi$-stable Weyl chamber.  A candidate need not come from a K3 surface.
+    The **candidate Néron–Severi lattices** of a class are the pairs $(N, \varphi)$, up to isomorphism, that satisfy the known necessary conditions: from the {{ KNOWL('k3.fq.artin_tate', 'Artin–Tate formula') }}, from $\ell$-adic and crystalline cohomology, and the existence of a $\varphi$-stable Weyl chamber.  A candidate need not come from a K3 surface.  For ordinary classes, Taelman's description of ordinary K3 surfaces over $\F_q$ in terms of lattices with a Frobenius endomorphism \cite{arxiv:1711.09225,doi:10.1515/crelle-2018-0023} determines which candidates occur, assuming potential semistable reduction (see {{ KNOWL('k3.fq.polarization_degrees', 'polarization degrees') }}).
 - id: k3.fq.real_polynomial
   title: Real polynomial of a motive of K3 type
   content: |-
@@ -163,10 +227,10 @@
 - id: k3.fq.kummer
   title: Kummer candidates
   content: |-
-    For $p > 2$, the Kummer surface $\mathrm{Km}(A)$ of an abelian surface $A$ over $\F_q$ has polynomial $P(T) = P_{\wedge}(T)\,P_{16}(T)$.  Here $P_{\wedge}$ is the polynomial of $\wedge^2 H^1(A)(1)$, whose normalized Frobenius eigenvalues are the $\pi_i\pi_j/q$ ($i < j$) for the Frobenius eigenvalues $\pi_1, \ldots, \pi_4$ of $A$, and $P_{16}$ is the polynomial of the permutation action of Frobenius on the $16$ exceptional curves, which correspond to the points of $A[2]$.
+    When the characteristic $p$ of $\F_q$ is odd, the Kummer surface $\mathrm{Km}(A)$ of an abelian surface $A$ over $\F_q$ has polynomial $P(T) = P_{\wedge}(T)\,P_{16}(T)$.  Here $P_{\wedge}$ is the polynomial of $\wedge^2 H^1(A)(1)$, whose normalized Frobenius eigenvalues are the $\pi_i\pi_j/q$ ($i < j$) for the Frobenius eigenvalues $\pi_1, \ldots, \pi_4$ of $A$, and $P_{16}$ is the polynomial of the permutation action of Frobenius on the $16$ exceptional curves, which correspond to the points of $A[2]$.
 
     The **Kummer candidates** of a {{ KNOWL('k3.fq.motive', 'motive of K3 type') }} are the {{ KNOWL('av.isogeny_class', 'isogeny classes') }} of abelian surfaces over $\F_q$ for which $P_{\wedge}$ has the same {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }} as the class.  A class with no Kummer candidates does not contain a Kummer surface.  They are not computed in characteristic $2$.
 - id: k3.fq.polarization_degrees
   title: Polarization degrees
   content: |-
-    For an ordinary {{ KNOWL('k3.fq.motive', 'motive of K3 type') }}, the **polarization degrees** are the integers $2d \le 100$ such that the class contains a K3 surface over $\F_q$ with a primitive polarization of degree $2d$.  They are determined using Taelman's description of ordinary K3 surfaces over $\F_q$ in terms of lattices with a Frobenius endomorphism \cite{arxiv:1711.09225}.  Its existence part assumes potential semistable reduction of K3 surfaces over $p$-adic fields, which is known for example when $p \ge 5$ and the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }} is at least $12$.  They are not computed for other classes.
+    For an ordinary {{ KNOWL('k3.fq.motive', 'motive of K3 type') }}, the **polarization degrees** are the integers $2d \le 100$ such that the class contains a {{ KNOWL('k3.surface', 'K3 surface') }} over $\F_q$ with a primitive polarization of degree $2d$.  They are determined using Taelman's description of ordinary K3 surfaces over $\F_q$ in terms of lattices with a Frobenius endomorphism \cite{arxiv:1711.09225}.  Its existence part assumes potential semistable reduction of K3 surfaces over $p$-adic fields, which is known for example when the characteristic $p$ is at least $5$ and the {{ KNOWL('k3.geometric_picard_rank', 'geometric Picard rank') }} is at least $12$.  They are not computed for other classes.
