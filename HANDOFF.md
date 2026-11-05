@@ -17,14 +17,15 @@ This is a new LMFDB section, "Motives of K3 type" over F_q.  Each row is a degre
 | Knowl drafts (37) | `knowls/k3_fq_knowls.md` in the compute repo | not in any database yet |
 | Test upload | `test_upload/k3_fq_isog_test.txt` (12 rows) and `test_upload/create_k3_fq_isog.py` (the `create_table` call, generated from the schema by `scripts/make_create_table.py`) | never run against a real database |
 | Kedlaya's root-unitary | git submodule `external/root-unitary` (pinned at `d046f6c`); `make` builds `bin/weilpoly` from `c-script/weilpoly.c` against Sage's FLINT | |
-| Sample data (mimir) | `/scratch/claudeF/work/k3fq_sample_data/` (pipeline dirs), combined export `/scratch/claudeF/work/k3fq_sample/k3_fq_isog.txt` (4,809 rows, q = 2, 3, 4) | readable by all; only claudeF can write |
+| Sample data (mimir) | `/scratch/claudeF/work/k3fq_sample_data/` (pipeline dirs), combined export `/scratch/claudeF/work/k3fq_sample/k3_fq_isog.txt` (4,809 rows, q = 2, 3, 4) | readable by all; only claudeF can write.  The same sample with the new labels is `/scratch/claudeM/work/k3fq_sample/k3_fq_isog.txt` (pipeline dirs in `/scratch/claudeM/work/k3fq_sample_data/`) |
 | Front-end harness (mimir) | `/scratch/claudeF/work/k3fq_frontend/`: `run_harness.py [--sample=FILE]` (Flask test client against an in-memory fake table), `run_unit_tests.py --sample=FILE`, `serve.py` (port 37791) | run from the LMFDB worktree with `sage -python` |
 
 ## Pipeline (compute repo)
 
-The stages are `enumerate`, `basic`, `fields`, `twists`, `basechange`, `kummer`, `export` and `counts`; run them as `sage -python k3fq.py ...`.  The README has the details.  Tests: `make test` (55 pass; a fresh `git clone --recursive` passes too).
+The stages are `enumerate`, `basic`, `fields`, `twists`, `basechange`, `kummer`, `export` and `counts`; run them as `sage -python k3fq.py ...`.  The README has the details.  Tests: `make test` (73 pass; a fresh `git clone --recursive` passes too).
 
 Key design points:
+- Labels are `q.ρ.c.b1_..._bk` (`k3fq/labels.py`): the geometric Picard rank, the index `c` of the cyclotomic part among those of degree ρ̄, and the coefficients of the transcendental part, as in abelian variety labels.  They replaced `q.s.c1_..._c11` on 2026-11-05, because large cyclotomic parts made those 25–58 characters long (median 32 in the sample; the new median is 13).  The geometric class representative of a complete twist class always has `c = a`.
 - Sign −1 polynomials are (1 − T²) times the sign +1 polynomials of degree 20.
 - `--min-geometric-rank R` multiplies transcendental parts of degree ≤ 22 − R by every cyclotomic product of the complementary degree.
 - Galois groups are certified as C2 ≀ Gal(h) via Frobenius cycle types, with PARI's `polgalois` for the real polynomial h; Magma is the fallback.

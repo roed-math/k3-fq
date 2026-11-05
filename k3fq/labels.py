@@ -1,11 +1,28 @@
 """
 Labels for K3-type polynomials.
 
-A label has the form ``q.s.c1_c2_..._c11`` where ``s`` is ``p`` (sign +1) or
-``m`` (sign -1) and ``ci`` is the signed Cremona letter code of the
-coefficient a_i of P(T) = q + a_1 T + ... + a_22 T^22.  The upper half of the
-coefficients is determined by a_{22-i} = sign * a_i.
+Write P = C * P_T, where C = (1 - T)^{e_1} prod_{m > 1} Phi_m^{e_m} is the
+cyclotomic part, of degree rho (the geometric Picard rank), and P_T is the
+transcendental part, which is palindromic of degree d = 22 - rho with
+constant term q.  A label has the form
+
+    q.rho.c.b1_b2_..._bk      (k = d/2)
+
+where
+
+- ``c`` is the letter code of the index of the exponent vector
+  (e_1, e_2, e_3, ...) among those of total degree rho, in decreasing
+  lexicographic order (so ``a`` is (1 - T)^rho);
+- ``bi`` is the signed letter code of the coefficient of T^i in P_T, as in
+  the abelian variety labels.
+
+When rho = 22 there is no transcendental part and the label is ``q.22.c``.
+The sign of the functional equation is (-1)^{e_1}, so it is not needed.
+
+This module is pure Python, so that the LMFDB front end can share the logic.
 """
+import re
+from functools import lru_cache
 
 DEGREE = 22
 HALF = DEGREE // 2
@@ -69,42 +86,290 @@ def signed_class_to_int(code):
     return class_to_int(code)
 
 
+# ----------------------------------------------------------------------
+# Integer polynomials, as coefficient lists with the constant term first
+
+def _strip(f):
+    f = list(f)
+    while f and f[-1] == 0:
+        f.pop()
+    return f
+
+
+def poly_mul(f, g):
+    if not f or not g:
+        return []
+    h = [0] * (len(f) + len(g) - 1)
+    for i, a in enumerate(f):
+        if a:
+            for j, b in enumerate(g):
+                h[i + j] += a * b
+    return h
+
+
+def poly_divide(f, g):
+    """
+    The quotient f / g if g divides f exactly, else None.  The leading
+    coefficient of g must be 1 or -1.
+    """
+    f, g = _strip(f), _strip(g)
+    lead = g[-1]
+    if lead not in (1, -1):
+        raise ValueError("divisor must have leading coefficient 1 or -1")
+    if len(f) < len(g):
+        return [] if not f else None
+    f = list(f)
+    dg = len(g) - 1
+    quo = [0] * (len(f) - dg)
+    for i in range(len(f) - 1, dg - 1, -1):
+        c = f[i] * lead
+        if c:
+            quo[i - dg] = c
+            for j in range(dg + 1):
+                f[i - dg + j] -= c * g[j]
+    if any(f[:dg]):
+        return None
+    return quo
+
+
+def _poly_eval(f, x):
+    v = 0
+    for c in reversed(f):
+        v = v * x + c
+    return v
+
+
+def euler_phi(n):
+    ans, m, p = n, n, 2
+    while p * p <= m:
+        if m % p == 0:
+            while m % p == 0:
+                m //= p
+            ans -= ans // p
+        p += 1
+    if m > 1:
+        ans -= ans // m
+    return ans
+
+
+# phi(m) >= sqrt(m/2), so m <= 2 * 22^2 suffices
+CYCLOTOMIC_ORDERS = [m for m in range(1, 2 * DEGREE ** 2 + 1) if euler_phi(m) <= DEGREE]
+_POSITION = {m: i for i, m in enumerate(CYCLOTOMIC_ORDERS)}
+
+
+@lru_cache(maxsize=None)
+def cyclotomic_factor(m):
+    """
+    Phi_m as a tuple of coefficients, normalized to have constant term 1
+    (so 1 - T for m = 1).
+
+    >>> cyclotomic_factor(1), cyclotomic_factor(6)
+    ((1, -1), (1, -1, 1))
+    """
+    if m == 1:
+        return (1, -1)
+    f = [-1] + [0] * (m - 1) + [1]
+    for d in range(1, m):
+        if m % d == 0:
+            f = poly_divide(f, cyclotomic_factor(d))
+    if f[0] < 0:
+        f = [-c for c in f]
+    return tuple(f)
+
+
+@lru_cache(maxsize=None)
+def _tail_counts():
+    """
+    N[i][k] = the number of exponent vectors of degree k supported on
+    CYCLOTOMIC_ORDERS[i:].
+    """
+    n = len(CYCLOTOMIC_ORDERS)
+    N = [[0] * (DEGREE + 1) for _ in range(n + 1)]
+    N[n][0] = 1
+    for i in range(n - 1, -1, -1):
+        ph = euler_phi(CYCLOTOMIC_ORDERS[i])
+        for k in range(DEGREE + 1):
+            N[i][k] = sum(N[i + 1][k - e * ph] for e in range(k // ph + 1))
+    return N
+
+
+def num_cyclotomic_parts(rho):
+    """
+    The number of cyclotomic parts of degree ``rho``.
+
+    >>> [num_cyclotomic_parts(k) for k in (0, 2, 22)]
+    [1, 6, 60280]
+    """
+    return _tail_counts()[0][rho]
+
+
+def cyclotomic_index(orders):
+    """
+    The index of the cyclotomic part prod Phi_m (m in ``orders``, with
+    multiplicity) among those of the same degree, ordered so that the
+    exponent vectors (e_1, e_2, e_3, ...) decrease lexicographically.
+
+    >>> [cyclotomic_index(o) for o in ([1, 1], [1, 2], [2, 2], [3], [4], [6])]
+    [0, 1, 2, 3, 4, 5]
+    """
+    exps = {}
+    for m in orders:
+        if m not in _POSITION:
+            raise ValueError("phi(%s) is larger than %s" % (m, DEGREE))
+        exps[m] = exps.get(m, 0) + 1
+    k = sum(euler_phi(m) for m in orders)
+    if k > DEGREE:
+        raise ValueError("cyclotomic part of degree %s > %s" % (k, DEGREE))
+    N = _tail_counts()
+    idx = 0
+    for i, m in enumerate(CYCLOTOMIC_ORDERS):
+        ph = euler_phi(m)
+        e = exps.get(m, 0)
+        # vectors agreeing so far but with a larger exponent of Phi_m come first
+        for f in range(e + 1, k // ph + 1):
+            idx += N[i + 1][k - f * ph]
+        k -= e * ph
+    return idx
+
+
+def cyclotomic_orders(rho, idx):
+    """
+    Inverse of :func:`cyclotomic_index`: the sorted list of m (with
+    multiplicity) for the cyclotomic part of degree ``rho`` with index ``idx``.
+
+    >>> cyclotomic_orders(2, 4)
+    [4]
+    """
+    N = _tail_counts()
+    if not 0 <= rho <= DEGREE or not 0 <= idx < N[0][rho]:
+        raise ValueError("no cyclotomic part of degree %s with index %s" % (rho, idx))
+    orders = []
+    k = rho
+    for i, m in enumerate(CYCLOTOMIC_ORDERS):
+        ph = euler_phi(m)
+        for e in range(k // ph, -1, -1):
+            n = N[i + 1][k - e * ph]
+            if idx < n:
+                break
+            idx -= n
+        orders.extend([m] * e)
+        k -= e * ph
+    return orders
+
+
+def cyclotomic_product(orders):
+    """
+    prod Phi_m over ``orders``, normalized to have constant term 1.
+    """
+    C = [1]
+    for m in orders:
+        C = poly_mul(C, cyclotomic_factor(m))
+    return C
+
+
+def split_cyclotomic(coeffs):
+    """
+    Split the polynomial with coefficients ``coeffs`` as C * P_T, where C is
+    a product of cyclotomic polynomials (normalized to have constant term 1)
+    and P_T has no roots of unity among its roots.  Returns the sorted list
+    of orders m (with multiplicity) and the coefficients of P_T.
+    """
+    f = _strip([int(c) for c in coeffs])
+    v2, v3 = _poly_eval(f, 2), _poly_eval(f, 3)
+    orders = []
+    for m in CYCLOTOMIC_ORDERS:
+        g = cyclotomic_factor(m)
+        g2, g3 = _poly_eval(g, 2), _poly_eval(g, 3)
+        while len(f) > len(g) - 1 and v2 % g2 == 0 and v3 % g3 == 0:
+            h = poly_divide(f, g)
+            if h is None:
+                break
+            f, v2, v3 = h, v2 // g2, v3 // g3
+            orders.append(m)
+    return orders, f
+
+
+# ----------------------------------------------------------------------
+# Labels
+
+LABEL_RE = re.compile(r"^([1-9]\d*)\.(0|[1-9]\d*)\.([a-z]+)(?:\.([a-z]+(?:_[a-z]+)*))?$")
+
+
 def poly_to_label(coeffs):
     """
     The label of the K3-type polynomial with coefficient list ``coeffs``
     (constant term first, length 23).
 
-    >>> poly_to_label([2] + [0]*21 + [2])
-    '2.p.a_a_a_a_a_a_a_a_a_a_a'
+    >>> poly_to_label(poly_mul(cyclotomic_product([1] * 20), [2, 1, 2]))
+    '2.20.a.b'
+    >>> poly_to_label([2] + [0]*21 + [2])  # 2 Phi_4 Phi_44
+    '2.22.dilx'
     """
+    coeffs = [int(c) for c in coeffs]
     if len(coeffs) != DEGREE + 1:
         raise ValueError("expected %s coefficients" % (DEGREE + 1))
-    q = int(coeffs[0])
-    lead = int(coeffs[-1])
-    if lead == q:
-        s = "p"
-    elif lead == -q:
-        s = "m"
-    else:
-        raise ValueError("leading coefficient must be +-q")
-    codes = "_".join(signed_cremona_letter_code(int(c)) for c in coeffs[1:HALF + 1])
-    return "%s.%s.%s" % (q, s, codes)
+    q = coeffs[0]
+    if q < 2 or coeffs[-1] not in (q, -q):
+        raise ValueError("constant term must be q > 1 and leading coefficient +-q")
+    orders, trans = split_cyclotomic(coeffs)
+    rho = sum(euler_phi(m) for m in orders)
+    d = DEGREE - rho
+    if len(trans) != d + 1 or trans != trans[::-1] or trans[0] != q:
+        raise ValueError("transcendental part must be palindromic with constant term q")
+    label = "%s.%s.%s" % (q, rho, cremona_letter_code(cyclotomic_index(orders)))
+    if d:
+        label += "." + "_".join(signed_cremona_letter_code(b) for b in trans[1:d // 2 + 1])
+    return label
+
+
+def parse_label(label):
+    """
+    Returns ``(q, orders, trans)``: the cardinality of the base field, the
+    sorted list of cyclotomic orders and the coefficients of the
+    transcendental part.  Raises a ValueError for labels that are not in
+    canonical form.
+    """
+    match = LABEL_RE.fullmatch(label)
+    if not match:
+        raise ValueError("labels have the form q.rho.c.b1_..._bk")
+    q, rho, c, codes = match.groups()
+    q, rho = int(q), int(rho)
+    if q < 2:
+        raise ValueError("q must be at least 2")
+    if rho > DEGREE or rho % 2:
+        raise ValueError("the geometric Picard rank must be even and at most %s" % DEGREE)
+    idx = class_to_int(c)
+    if cremona_letter_code(idx) != c:
+        raise ValueError("the cyclotomic code %s has a leading a" % c)
+    if idx >= num_cyclotomic_parts(rho):
+        raise ValueError("there are only %s cyclotomic parts of degree %s" % (num_cyclotomic_parts(rho), rho))
+    k = (DEGREE - rho) // 2
+    codes = codes.split("_") if codes else []
+    if len(codes) != k:
+        raise ValueError("geometric Picard rank %s needs %s transcendental coefficient codes" % (rho, k))
+    lower = [signed_class_to_int(b) for b in codes]
+    if [signed_cremona_letter_code(b) for b in lower] != codes:
+        raise ValueError("coefficient codes must not have leading a's (other than a sign)")
+    trans = [q] + lower + lower[:-1][::-1] + [q] if k else [q]
+    return q, cyclotomic_orders(rho, idx), trans
 
 
 def label_to_poly(label):
     """
     The coefficient list of the polynomial with the given label.
 
-    >>> label_to_poly('2.m.ab_a_a_a_a_a_a_a_a_a_a')[:3], label_to_poly('2.m.ab_a_a_a_a_a_a_a_a_a_a')[-3:]
-    ([2, -1, 0], [0, 1, -2])
+    >>> label_to_poly('2.22.b')[:3], label_to_poly('2.22.b')[-3:]
+    ([2, -40, 378], [-378, 40, -2])
     """
-    q, s, codes = label.split(".")
-    q = int(q)
-    sign = {"p": 1, "m": -1}[s]
-    lower = [signed_class_to_int(c) for c in codes.split("_")]
-    if len(lower) != HALF:
-        raise ValueError("expected %s coefficient codes" % HALF)
-    if sign == -1 and lower[-1] != 0:
-        raise ValueError("middle coefficient must vanish when the sign is -1")
-    coeffs = [q] + lower + [sign * c for c in reversed(lower[:-1])] + [sign * q]
-    return coeffs
+    q, orders, trans = parse_label(label)
+    return poly_mul(cyclotomic_product(orders), trans)
+
+
+def label_sort_key(label):
+    """
+    A key for sorting labels: by q, geometric Picard rank, cyclotomic index
+    and then the transcendental coefficients.
+    """
+    parts = label.split(".")
+    codes = parts[3].split("_") if len(parts) > 3 else []
+    return (int(parts[0]), int(parts[1]), class_to_int(parts[2])) + tuple(signed_class_to_int(b) for b in codes)

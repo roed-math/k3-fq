@@ -18,7 +18,7 @@ search_columns = {
 }
 
 col_description = {
-    'label': 'label `q.s.c1_..._c11`, as above',
+    'label': 'label `q.ρ.c.b1_..._bk`, as above',
     'q': 'cardinality of the base field',
     'p': 'characteristic of the base field',
     'r': 'degree of the base field over its prime field, so that $q = p^r$',
@@ -62,7 +62,7 @@ col_description = {
     'is_pointless': 'whether `k3_count` is $0$',
     'is_primitive': 'whether this class is not the base change of a class over a proper subfield of $\\mathbb{F}_q$',
     'primitive_models': 'labels of classes over proper subfields $\\mathbb{F}_{q_0}$ ($q_0^d = q$) whose base change to $\\mathbb{F}_q$ is this class.  Null if primitive',
-    'geometric_class': "label of the representative of this class's twist class.  Two classes over $\\mathbb{F}_q$ are *twists* if they become equal over some finite extension, i.e. $P_n = P'_n$ for some $n$.  The representative is the member of the twist class with the smallest label (all members have the same $q$)",
+    'geometric_class': "label of the representative of this class's twist class.  Two classes over $\\mathbb{F}_q$ are *twists* if they become equal over some finite extension, i.e. $P_n = P'_n$ for some $n$.  The representative is the member of the twist class with the smallest label, in the order defined above (all members have the same $q$ and $\\bar\\rho$).  The class of $(1-T)^{\\bar\\rho}P_T$ is always a twist, so when all classes with this $q$ and $\\bar\\rho$ are present (as in the database), the representative has cyclotomic code `a`",
     'twist_count': 'number of classes in the twist class (including this one)',
     'twists': 'list of triples `[label, bc_label, n]`, where `label` is a twist, `n` is a minimal degree (for divisibility) over which the two classes become equal, and `bc_label` is the label of the common base change to $\\mathbb{F}_{q^n}$.  This is the same convention as `av_fq_isog.twists`.  Null when `twist_count` exceeds 50 (supersingular classes and classes with large cyclotomic parts have very large twist classes); search on `geometric_class` instead',
     'max_twist_degree': 'the largest `n` appearing in `twists` (null when `twists` is)',

@@ -1,6 +1,11 @@
 import random
 
-from k3fq.labels import poly_to_label, label_to_poly, signed_cremona_letter_code, signed_class_to_int
+import pytest
+
+from k3fq.labels import (poly_to_label, label_to_poly, parse_label, label_sort_key,
+                         signed_cremona_letter_code, signed_class_to_int, cyclotomic_index,
+                         cyclotomic_orders, num_cyclotomic_parts, cyclotomic_product,
+                         split_cyclotomic, euler_phi, poly_mul, CYCLOTOMIC_ORDERS)
 
 
 def test_codes():
@@ -8,13 +13,84 @@ def test_codes():
         assert signed_class_to_int(signed_cremona_letter_code(m)) == m
 
 
+def test_cyclotomic_index():
+    assert len(CYCLOTOMIC_ORDERS) == 43
+    assert [num_cyclotomic_parts(k) for k in (0, 2, 4, 22)] == [1, 6, 24, 60280]
+    for k in range(23):
+        orders = [cyclotomic_orders(k, i) for i in range(num_cyclotomic_parts(k))]
+        assert all(sum(euler_phi(m) for m in o) == k for o in orders)
+        assert len({tuple(o) for o in orders}) == len(orders)
+        assert [cyclotomic_index(o) for o in orders] == list(range(len(orders)))
+        # exponent vectors (e_1, e_2, ...) decrease lexicographically
+        vecs = [[o.count(m) for m in CYCLOTOMIC_ORDERS] for o in orders]
+        assert vecs == sorted(vecs, reverse=True)
+    assert cyclotomic_orders(22, 0) == [1] * 22
+    assert cyclotomic_orders(22, 1) == [1] * 21 + [2]
+
+
+def random_transcendental(rng, q, k):
+    # not necessarily with roots on the unit circle; the labels don't care
+    lower = [rng.randint(-10**6, 10**6) for _ in range(k)]
+    return [q] + lower + lower[:-1][::-1] + [q] if k else [q]
+
+
 def test_roundtrip():
     rng = random.Random(1)
-    for _ in range(200):
+    for _ in range(300):
         q = rng.choice([2, 3, 4, 5, 7, 8, 9, 25, 101])
-        sign = rng.choice([1, -1])
-        lower = [rng.randint(-10**6, 10**6) for _ in range(11)]
-        if sign == -1:
-            lower[-1] = 0
-        coeffs = [q] + lower + [sign * c for c in reversed(lower[:-1])] + [sign * q]
-        assert label_to_poly(poly_to_label(coeffs)) == coeffs
+        rho = rng.choice(range(0, 23, 2))
+        orders = cyclotomic_orders(rho, rng.randrange(num_cyclotomic_parts(rho)))
+        trans = random_transcendental(rng, q, (22 - rho) // 2)
+        coeffs = poly_mul(cyclotomic_product(orders), trans)
+        label = poly_to_label(coeffs)
+        assert label.split(".")[:2] == [str(q), str(rho)]
+        assert label_to_poly(label) == coeffs
+        assert parse_label(label) == (q, orders, trans)
+        # random transcendental parts this large have no cyclotomic factors
+        assert split_cyclotomic(coeffs) == (orders, trans)
+
+
+def test_examples():
+    # 2(1 - T)^22 and 2(1 - T)^21(1 + T)
+    assert poly_to_label(poly_mul(cyclotomic_product([1] * 22), [2])) == "2.22.a"
+    assert poly_to_label(poly_mul(cyclotomic_product([1] * 21 + [2]), [2])) == "2.22.b"
+    # 2 + 2T^22 = 2 Phi_4 Phi_44 is supersingular
+    assert poly_to_label([2] + [0] * 21 + [2]) == "2.22.dilx"
+    assert label_to_poly("2.22.dilx") == [2] + [0] * 21 + [2]
+    # (1 - T)^16 Phi_4 (4 + T + 6T^2 + T^3 + 4T^4)
+    P = poly_mul(cyclotomic_product([1] * 16 + [4]), [4, 1, 6, 1, 4])
+    assert poly_to_label(P) == "4.18.e.b_g"
+
+
+@pytest.mark.parametrize("bad", [
+    "2.p.a_a_a_a_a_a_a_a_a_a_a",   # old format
+    "2.22",
+    "02.22.a",
+    "2.022.a",
+    "1.22.a",
+    "2.23.a",
+    "2.24.a",
+    "2.22.ab",                     # leading a in the cyclotomic code
+    "2.22.dmcd",                   # index out of range
+    "2.22.a.b",                    # no transcendental part when rho = 22
+    "2.20.a",
+    "2.20.a.b_c",
+    "2.20.a.aab",                  # -1 is "ab", with no further leading a
+    "2.20.A.b",
+])
+def test_bad_labels(bad):
+    with pytest.raises(ValueError):
+        parse_label(bad)
+
+
+def test_valid_edge_cases():
+    assert parse_label("2.20.a.ab")[2] == [2, -1, 2]
+    assert parse_label("2.0.a.a_a_a_a_a_a_a_a_a_a_a")[1] == []
+
+
+def test_sort_key():
+    labels = ["2.22.b", "2.20.a.b", "2.20.ba.ab", "2.20.c.ab", "2.20.c.b", "3.0.a.a_a_a_a_a_a_a_a_a_a_a",
+              "2.22.ba", "2.22.c"]
+    assert sorted(labels, key=label_sort_key) == [
+        "2.20.a.b", "2.20.c.ab", "2.20.c.b", "2.20.ba.ab", "2.22.b", "2.22.c", "2.22.ba",
+        "3.0.a.a_a_a_a_a_a_a_a_a_a_a"]

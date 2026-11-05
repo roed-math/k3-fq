@@ -26,7 +26,7 @@ from math import gcd
 from sage.all import ZZ, QQ, RealField, ComplexField, PolynomialRing, pari, pi, euler_phi, lcm as sage_lcm
 
 from .cyclotomic import R, T
-from .labels import poly_to_label
+from .labels import poly_to_label, label_sort_key
 from .invariants import power_sums
 
 M_TWIST = sage_lcm([m for m in range(1, 500) if euler_phi(m) <= 44])
@@ -273,7 +273,7 @@ def class_twists(members, angles):
                 twists[A["label"]].append([B["label"], bc, d])
                 twists[B["label"]].append([A["label"], bc, d])
     for lab in twists:
-        twists[lab].sort(key=lambda t: (t[2], t[0]))
+        twists[lab].sort(key=lambda t: (t[2], label_sort_key(t[0])))
     return twists
 
 
@@ -281,7 +281,7 @@ def twist_columns(members, twists=None):
     """
     The TWIST_COLUMNS for each member of a twist class.
     """
-    rep = min(r["label"] for r in members)
+    rep = min((r["label"] for r in members), key=label_sort_key)
     out = {}
     for r in members:
         lab = r["label"]
@@ -335,7 +335,7 @@ def primitive_model_data(rows_by_q):
             for row0 in rows_by_q[q0]:
                 models[poly_to_label(base_change(row0["poly"], d))].append(row0["label"])
         for row in rows:
-            ms = sorted(models.get(row["label"], []))
+            ms = sorted(models.get(row["label"], []), key=label_sort_key)
             if ms:
                 out[row["label"]] = {"is_primitive": False, "primitive_models": ms}
             else:

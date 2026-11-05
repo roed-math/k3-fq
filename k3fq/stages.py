@@ -26,7 +26,7 @@ from sage.all import ZZ, pari
 from .columns import (ISOG_COLUMNS, ISOG_TYPES, TWIST_COLUMNS, BASECHANGE_COLUMNS,
                       KUMMER_COLUMNS)
 from .cyclotomic import R, split_cyclotomic
-from .labels import signed_cremona_letter_code
+from .labels import signed_cremona_letter_code, label_sort_key
 from .pgformat import read_file, write_file
 from . import twists as tw
 
@@ -161,7 +161,7 @@ def twists_stage(q, datadir, jobs=8):
     out = {}
     work = []
     for labs in classes.values():
-        labs = sorted(labs)
+        labs = sorted(labs, key=label_sort_key)
         if 1 < len(labs) <= tw.MAX_TWISTS:
             work.append([data[lab] for lab in labs])
         else:
@@ -170,7 +170,7 @@ def twists_stage(q, datadir, jobs=8):
     with Pool(jobs) as pool:
         for res in pool.imap_unordered(_class_twists, work):
             out.update(res)
-    rows = [dict(label=lab, **cols) for lab, cols in sorted(out.items())]
+    rows = [dict(label=lab, **cols) for lab, cols in sorted(out.items(), key=lambda kv: label_sort_key(kv[0]))]
     write_file(os.path.join(datadir, "twists", "q%s.txt" % q),
                [("label", "text")] + [(c, ISOG_TYPES[c]) for c in TWIST_COLUMNS], rows)
     print("q=%s: %s twist classes (%.1fs)" % (q, len(classes), time.time() - t0))

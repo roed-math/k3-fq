@@ -27,17 +27,22 @@ after the hypergeometric line.
 
 **Title:** Labels for motives of K3 type over finite fields
 
-The label of a class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over $\F_q$ has the form **q.s.c1_c2_..._c11**, where
+The label of a class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over $\F_q$ has the form **q.ρ.c.b1_b2_..._bk**.  It describes the factorization $P(T) = C(T)\,P_T(T)$ into the {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} and the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }}.  Here
 
 - **q** is the cardinality of the base field $\F_q$;
-- **s** is `p` if the {{ KNOWL('k3.fq.sign', 'sign') }} $\varepsilon$ is $+1$, and `m` if $\varepsilon = -1$;
-- **c1, ..., c11** encode the coefficients $a_1, \ldots, a_{11}$ of the polynomial
-$$P(T) = q + a_1 T + a_2 T^2 + \cdots + a_{22} T^{22},$$
+- **ρ** is the {{ KNOWL('k3.fq.geometric_picard_rank', 'geometric Picard rank') }} $\bar\rho = \deg C$, which is even, and $k = (22 - \bar\rho)/2$;
+- **c** encodes the cyclotomic part, as described below;
+- **b1, ..., bk** encode the coefficients $b_1, \ldots, b_k$ of the transcendental part
+$$P_T(T) = q + b_1 T + \cdots + b_k T^k + \cdots + b_1 T^{2k-1} + q T^{2k},$$
 as in the {{ KNOWL('av.fq.lmfdb_label', 'labels of isogeny classes of abelian varieties') }}: nonnegative integers are written in base 26 with the digits a, b, ..., z (where a = 0), and negative integers get a leading a.
 
-Since $a_{22-i} = \varepsilon a_i$, the label determines $P(T)$.  When $\varepsilon = -1$ the middle coefficient $a_{11}$ vanishes, so the last code is always `a`.  The sign is part of the label since a polynomial with sign $+1$ can also have $a_{11} = 0$.
+Write $C(T) = (1-T)^{e_1}\prod_{m \ge 2}\Phi_m(T)^{e_m}$, where $m$ runs over the 43 integers with $\varphi(m) \le 22$.  List the exponent vectors $(e_1, e_2, e_3, \ldots)$ with $\sum_m e_m\varphi(m) = \bar\rho$ in decreasing lexicographic order, numbered from $0$.  Then **c** is the number of $C(T)$ in this list, written in base 26 as above.  For example, `a` means $C(T) = (1-T)^{\bar\rho}$, so that the {{ KNOWL('k3.fq.picard_rank', 'Picard rank') }} over $\F_q$ is already $\bar\rho$.  For $\bar\rho = 2$, the six cyclotomic parts $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$ have codes a, b, c, d, e, f.  There are $60{,}280$ cyclotomic parts of degree $22$, so **c** has at most four letters.
 
-For example, $P(T) = 2(1-T)^{22}$, which is supersingular over $\F_2$, has $a_1 = -44$, encoded as `abs`, and label `2.p.abs_ru_aeom_vqs_aczxs_imtm_atkou_bkkbs_aceprc_cvpea_adchca`.
+The label determines $P(T)$.  The {{ KNOWL('k3.fq.sign', 'sign') }} is $\varepsilon = (-1)^{e_1}$, so it is not part of the label.  When $\bar\rho = 22$ (the {{ KNOWL('k3.fq.newton_polygon', 'supersingular') }} case) there is no transcendental part, and the label is just **q.22.c**.
+
+For example, $2(1-T)^{22}$ and $2(1-T)^{21}(1+T)$ are supersingular over $\F_2$, with labels `2.22.a` and `2.22.b`.  Over $\F_4$, the class of $(1-T)^{16}\,\Phi_4(T)\,(4 + T + 6T^2 + T^3 + 4T^4)$ has $\bar\rho = 18$, and $(1-T)^{16}\Phi_4$ is number $4$ in the list, so its label is `4.18.e.b_g`.
+
+Labels are ordered by $q$, then $\bar\rho$, then the number encoded by **c**, then $b_1, \ldots, b_k$.
 
 The {{ KNOWL('k3.fq.lattices', 'candidate Néron–Severi lattices') }} of a class with label $L$ have labels $L.n$, where $n = 1, 2, \ldots$ is a counter.
 
@@ -320,7 +325,7 @@ is the polynomial of the class.  For a class that is not primitive, the LMFDB li
 
 Two classes of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over $\F_q$ are **twists** of each other if they become equal over some finite extension $\F_{q^n}$, that is, if their base changes $P_n$ and $P'_n$ agree.  This is an equivalence relation, and its classes are called **twist classes**; all members of a twist class have the same $q$.
 
-The representative of a twist class (the **geometric class**) is its member with the smallest label.  For each class the LMFDB lists the number of classes in its twist class (including the class itself) and, when this number is at most $50$, the list of twists: for each twist, a minimal degree $n$ (for divisibility) over which the two classes become equal, and the label of their common base change to $\F_{q^n}$, as for {{ KNOWL('av.twist', 'twists of abelian varieties') }}.  Supersingular classes and classes with large {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} have very large twist classes; use a search on the geometric class to list them.  The **maximum twist degree** is the largest $n$ in the list.
+The representative of a twist class (the **geometric class**) is its member with the smallest {{ KNOWL('k3.fq.lmfdb_label', 'label') }}.  The class of $(1-T)^{\bar\rho}P_T(T)$, where $P_T$ is the {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }}, is always a twist, so the representative has cyclotomic code `a`: all of its algebraic classes are defined over $\F_q$.  For each class the LMFDB lists the number of classes in its twist class (including the class itself) and, when this number is at most $50$, the list of twists: for each twist, a minimal degree $n$ (for divisibility) over which the two classes become equal, and the label of their common base change to $\F_{q^n}$, as for {{ KNOWL('av.twist', 'twists of abelian varieties') }}.  Supersingular classes and classes with large {{ KNOWL('k3.fq.cyclotomic_part', 'cyclotomic part') }} have very large twist classes; use a search on the geometric class to list them.  The **maximum twist degree** is the largest $n$ in the list.
 
 The geometric class is computed from the multiset of $\{M\theta_j\} \bmod 1$ over the transcendental Frobenius angles $\theta_j = \arg(\alpha_j)/2\pi$, with $M = \mathrm{lcm}\{m : \varphi(m) \le 44\}$; the minimal degrees are then verified by exact base change.
 
@@ -345,7 +350,7 @@ The candidates were enumerated with Oscar's machinery for lattices with isometry
 
 **Title:** Find a motive of K3 type
 
-To find a specific class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over a finite field, enter either its {{ KNOWL('k3.fq.lmfdb_label', 'label') }}, such as `2.p.abs_ru_aeom_vqs_aczxs_imtm_atkou_bkkbs_aceprc_cvpea_adchca`, or its polynomial: either $P(T)$ (with constant term $q$) or the {{ KNOWL('k3.fq.l_polynomial', 'L-polynomial') }} $L(T) = q^{-1}P(qT)$ (with constant term $1$), as a polynomial of degree $22$ in one variable, such as `2*(1-T)^22`, or as the list of its 23 coefficients, constant term first.
+To find a specific class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over a finite field, enter either its {{ KNOWL('k3.fq.lmfdb_label', 'label') }}, such as `2.22.a` or `4.18.e.b_g`, or its polynomial: either $P(T)$ (with constant term $q$) or the {{ KNOWL('k3.fq.l_polynomial', 'L-polynomial') }} $L(T) = q^{-1}P(qT)$ (with constant term $1$), as a polynomial of degree $22$ in one variable, such as `2*(1-T)^22`, or as the list of its 23 coefficients, constant term first.
 
 ## k3.fq.initial_coefficients
 
@@ -353,7 +358,7 @@ To find a specific class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type'
 
 The LMFDB allows one to search for {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over finite fields by specifying the first few coefficients $a_1, a_2, \ldots$ of the polynomial
 $$P(T) = q + a_1 T + a_2 T^2 + \cdots + a_{22}T^{22},$$
-in increasing order of degree, as a list such as `[-1, 3]`.  The constant term $a_0 = q$ is **not** included.  Note that these are the coefficients of $P(T)$, as in the {{ KNOWL('k3.fq.lmfdb_label', 'label') }}, rather than those of the {{ KNOWL('k3.fq.l_polynomial', 'L-polynomial') }}, whose coefficient of $T^i$ is $q^{i-1}a_i$.
+in increasing order of degree, as a list such as `[-1, 3]`.  The constant term $a_0 = q$ is **not** included.  Note that these are the coefficients of $P(T)$ itself, rather than those of its {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }} (which appear in the {{ KNOWL('k3.fq.lmfdb_label', 'label') }}) or of the {{ KNOWL('k3.fq.l_polynomial', 'L-polynomial') }}, whose coefficient of $T^i$ is $q^{i-1}a_i$.
 
 The search is much faster when the base field is specified as well.
 

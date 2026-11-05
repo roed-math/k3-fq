@@ -14,17 +14,20 @@ Other varieties of K3 type are treated through the same 22-dimensional motive $M
 - Gushel–Mukai fourfold: $H^4_{van}(Y)(2)$.
 - Verra fourfold: the K3-type piece of $H^4(Y)(2)$ (see the notes below).
 
-**Label**: `q.s.c1_c2_..._c11` where
+**Label**: `q.ρ.c.b1_b2_..._bk` where
 
 - `q` is the cardinality of the base field;
-- `s` is `p` if $\varepsilon = 1$ and `m` if $\varepsilon = -1$;
-- `c1_..._c11` encode $a_1, \ldots, a_{11}$ as in the abelian variety labels.  Nonnegative integers are written in base 26 with digits `a`–`z` (`a` = 0); negative integers get a leading `a`.
+- `ρ` is the geometric Picard rank $\bar\rho$, which is even, and $k = (22 - \bar\rho)/2$;
+- `c` encodes the cyclotomic part $C = (1-T)^{e_1}\prod_{m > 1}\Phi_m^{e_m}$.  Index the exponent vectors $(e_1, e_2, e_3, \ldots)$ by the 43 integers $m$ with $\varphi(m) \le 22$, in increasing order.  Sort the vectors with $\sum_m e_m\varphi(m) = \bar\rho$ in decreasing lexicographic order and number them from $0$.  Then `c` is the number of $C$, written in base 26 with digits `a`–`z` (`a` = 0).  So `a` is $(1-T)^{\bar\rho}$, and for $\bar\rho = 2$ the codes `a`–`f` are $(1-T)^2$, $(1-T)(1+T)$, $(1+T)^2$, $\Phi_3$, $\Phi_4$, $\Phi_6$.  There are 60,280 cyclotomic parts of degree 22, so `c` has at most four letters;
+- `b1_..._bk` encode the coefficients $b_1, \ldots, b_k$ of the transcendental part $P_T = q + b_1 T + \cdots + b_{2k-1}T^{2k-1} + qT^{2k}$ as in the abelian variety labels.  Nonnegative integers are written in base 26 with digits `a`–`z` (`a` = 0); negative integers get a leading `a`.
 
-Since $a_{22-i} = \varepsilon a_i$, the label determines $P$.  When $\varepsilon = -1$ we always have $a_{11} = 0$, so the last code is `a`.  The sign has to be in the label because a sign $+1$ polynomial can also have $a_{11} = 0$.  For example, $P = 2(1-T)^{22}$ has label `2.p.abs_ru_aeom_vqs_aczxs_imtm_atkou_bkkbs_aceprc_cvpea_adchca`.  Labels of classes with large cyclotomic parts are long, as for abelian varieties of large dimension.
+The transcendental part is palindromic ($b_{2k-i} = b_i$), so the label determines $P = C \cdot P_T$.  When $\bar\rho = 22$ there is no transcendental part, and the label is `q.22.c`.  The sign $\varepsilon = (-1)^{e_1}$ is determined by `c`.  For example, $2(1-T)^{22}$ has label `2.22.a` and $2(1-T)^{21}(1+T)$ has label `2.22.b`.  Over $\mathbb{F}_4$, $(1-T)^{16}\,\Phi_4\,(4 + T + 6T^2 + T^3 + 4T^4)$ has label `4.18.e.b_g`.
+
+Labels are ordered by $q$, then $\bar\rho$, then the number encoded by `c`, then $b_1, \ldots, b_k$ as integers.  This order defines the representative in `geometric_class`.  They are implemented in `k3fq/labels.py` in [roed-math/k3-fq](https://github.com/roed-math/k3-fq).
 
 | Column | Type | Description |
 | --- | --- | --- |
-| label | text | label `q.s.c1_..._c11`, as above |
+| label | text | label `q.ρ.c.b1_..._bk`, as above |
 | q | integer | cardinality of the base field |
 | p | integer | characteristic of the base field |
 | r | smallint | degree of the base field over its prime field, so that $q = p^r$ |
@@ -68,7 +71,7 @@ Since $a_{22-i} = \varepsilon a_i$, the label determines $P$.  When $\varepsilon
 | is_pointless | boolean | whether `k3_count` is $0$ |
 | is_primitive | boolean | whether this class is not the base change of a class over a proper subfield of $\mathbb{F}_q$ |
 | primitive_models | text[] | labels of classes over proper subfields $\mathbb{F}_{q_0}$ ($q_0^d = q$) whose base change to $\mathbb{F}_q$ is this class.  Null if primitive |
-| geometric_class | text | label of the representative of this class's twist class.  Two classes over $\mathbb{F}_q$ are *twists* if they become equal over some finite extension, i.e. $P_n = P'_n$ for some $n$.  The representative is the member of the twist class with the smallest label (all members have the same $q$) |
+| geometric_class | text | label of the representative of this class's twist class.  Two classes over $\mathbb{F}_q$ are *twists* if they become equal over some finite extension, i.e. $P_n = P'_n$ for some $n$.  The representative is the member of the twist class with the smallest label, in the order defined above (all members have the same $q$ and $\bar\rho$).  The class of $(1-T)^{\bar\rho}P_T$ is always a twist, so when all classes with this $q$ and $\bar\rho$ are present (as in the database), the representative has cyclotomic code `a` |
 | twist_count | integer | number of classes in the twist class (including this one) |
 | twists | jsonb | list of triples `[label, bc_label, n]`, where `label` is a twist, `n` is a minimal degree (for divisibility) over which the two classes become equal, and `bc_label` is the label of the common base change to $\mathbb{F}_{q^n}$.  This is the same convention as `av_fq_isog.twists`.  Null when `twist_count` exceeds 50 (supersingular classes and classes with large cyclotomic parts have very large twist classes); search on `geometric_class` instead |
 | max_twist_degree | integer | the largest `n` appearing in `twists` (null when `twists` is) |
