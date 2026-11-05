@@ -151,15 +151,17 @@ def twists_stage(q, datadir, jobs=8):
         for n in pool.imap_unordered(_keys_for_chunk, tasks):
             pass
     print("q=%s: geometric keys computed (%.1fs)" % (q, time.time() - t0))
-    classes = defaultdict(list)
+    # sets: overlapping enumeration files (e.g. full and elevated rank) share labels
+    classes = defaultdict(set)
     for fname in sorted(glob.glob(os.path.join(keydir, "keys.*.txt"))):
         for row in read_file(fname):
-            classes[row["key"]].append(row["label"])
+            classes[row["key"]].add(row["label"])
     small = {lab for labs in classes.values() if 1 < len(labs) <= tw.MAX_TWISTS for lab in labs}
     data = {r["label"]: r for r in iter_rows(datadir, q, _TWIST_INPUT) if r["label"] in small}
     out = {}
     work = []
     for labs in classes.values():
+        labs = sorted(labs)
         if 1 < len(labs) <= tw.MAX_TWISTS:
             work.append([data[lab] for lab in labs])
         else:

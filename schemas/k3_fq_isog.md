@@ -8,11 +8,11 @@ If $X/\mathbb{F}_q$ is a K3 surface then $P(T) = q \det(1 - q^{-1}\mathrm{Frob}\
 
 The *cyclotomic part* $C(T)$ of $P$ is the product of its cyclotomic factors (normalized with $C(0) = 1$).  The *transcendental part* is $P_T = P/C \in \mathbb{Z}[T]$, which has constant term $q$ and no roots of unity among its roots.  By the Tate conjecture (a theorem for K3 surfaces), the roots of $C$ correspond to algebraic classes.  So $\deg C$ is the geometric Picard rank.  The multiplicity of $T = 1$ as a root of $P$ is the Picard rank over $\mathbb{F}_q$.
 
-Other varieties of K3 type are treated through the same 22-dimensional motive $M$.  For each type, $M$ is the following piece of the cohomology:
+Other varieties of K3 type are treated through the same 22-dimensional motive $M$ of weight $0$, with $P(T) = q\det(1 - \mathrm{Frob}\,T \mid M)$.  For each type, $M$ is the following piece of the cohomology:
 - K3 surface: $H^2(X)(1)$.
-- cubic fourfold: $H^4_{prim}(Y)(1)$.
-- Gushel–Mukai fourfold: $H^4_{van}(Y)(1)$.
-- Verra fourfold: the K3-type piece of $H^4(Y)(1)$ (see the notes below).
+- cubic fourfold: $H^4_{prim}(Y)(2)$.
+- Gushel–Mukai fourfold: $H^4_{van}(Y)(2)$.
+- Verra fourfold: the K3-type piece of $H^4(Y)(2)$ (see the notes below).
 
 **Label**: `q.s.c1_c2_..._c11` where
 
@@ -40,7 +40,7 @@ Since $a_{22-i} = \varepsilon a_i$, the label determines $P$.  When $\varepsilon
 | has_k3_newton_polygon | boolean | whether the slopes have the shape $1 - 1/h, 1, \ldots, 1, 1 + 1/h$ for some $1 \le h \le 11$, or are all equal to $1$.  This is automatic when $q$ is prime |
 | newton_elevation | smallint | analogous to `av_fq_isog.newton_elevation`.  It is the number of lattice points $(x,y)$ with $0 \le x \le 11$ that lie on or above the ordinary Newton polygon (vertices $(0,0),(1,0),(21,20),(22,22)$) and strictly below the Newton polygon of $L$.  For K3-type Newton polygons it equals $h-1$, and it is $11$ in the supersingular case.  Null when `has_k3_newton_polygon` is false |
 | newton_coelevation | smallint | the number of lattice points $(x,y)$ with $0 \le x \le 11$ lying on or above the Newton polygon of $L$ and strictly below the supersingular polygon $y = x$.  For K3-type Newton polygons it equals $12 - h$ and is $0$ when supersingular.  So `newton_elevation + newton_coelevation = 11`.  Null when `has_k3_newton_polygon` is false |
-| is_ordinary | boolean | whether the height is $1$, i.e. $p \nmid a_1$ |
+| is_ordinary | boolean | whether $p \nmid a_1$, i.e. slope $0$ occurs.  Then the Newton polygon is of K3 type with height $1$.  (Over non-prime fields, `height` $= 1$ alone does not imply this: e.g. $2(2 - T + 2T^2)(1-T)^{20}$ over $\mathbb{F}_4$ has slopes $1/2, 1, \ldots, 1, 3/2$) |
 | is_supersingular | boolean | whether all slopes equal $1$.  Equivalently all roots of $P$ are roots of unity, i.e. `geometric_picard_rank` = 22 |
 | cyclotomic_factors | integer[] | the sorted list, with multiplicity, of the $m$ such that $C(T) = \pm\prod \Phi_m(T)$ |
 | picard_rank | smallint | $\rho$, the multiplicity of $T = 1$ as a root of $P$.  For a K3 surface this is the rank of $NS(X)$ |
@@ -60,7 +60,7 @@ Since $a_{22-i} = \varepsilon a_i$, the label determines $P$.  When $\varepsilon
 | galois_groups | text[] | for each factor in `transcendental_factors`, the label `nTk` of the Galois group of $f$ |
 | k3_counts | numeric[] | $\#X(\mathbb{F}_{q^n}) = 1 + q^{2n} + q^n\sum_i \alpha_i^n$ for $n = 1, \ldots, 10$: the point counts of a K3 surface in this class |
 | k3_count | bigint | $\#X(\mathbb{F}_q)$, duplicated for searching (equal to $1 + q^2 - a_1$) |
-| cubic_counts | numeric[] | $1 + q^n + q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a cubic fourfold $Y$ with $H^4_{prim}(Y)(1)$ in this class |
+| cubic_counts | numeric[] | $1 + q^n + q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a cubic fourfold $Y$ with $H^4_{prim}(Y)(2)$ in this class |
 | gm_counts | numeric[] | $1 + q^n + 2q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a Gushel–Mukai fourfold with vanishing cohomology in this class |
 | verra_counts | numeric[] | $1 + 2q^n + 2q^{2n} + 2q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a Verra fourfold whose K3-type piece is in this class (see the notes below) |
 | has_nonnegative_counts | boolean | whether $\#X(\mathbb{F}_{q^n}) \ge 0$ for all $n \ge 1$ (as a K3 surface).  This only needs checking for the finitely many $n$ with $q^n < 22$ |
@@ -73,16 +73,16 @@ Since $a_{22-i} = \varepsilon a_i$, the label determines $P$.  When $\varepsilon
 | twists | jsonb | list of triples `[label, bc_label, n]`, where `label` is a twist, `n` is a minimal degree (for divisibility) over which the two classes become equal, and `bc_label` is the label of the common base change to $\mathbb{F}_{q^n}$.  This is the same convention as `av_fq_isog.twists`.  Null when `twist_count` exceeds 50 (supersingular classes and classes with large cyclotomic parts have very large twist classes); search on `geometric_class` instead |
 | max_twist_degree | integer | the largest `n` appearing in `twists` (null when `twists` is) |
 | kummer_av_classes | text[] | labels of isogeny classes of abelian surfaces $A/\mathbb{F}_q$ (in `av_fq_isog`) whose wedge square, normalized, has the same transcendental part as $P$.  A Kummer surface $\mathrm{Km}(A)$ ($p > 2$) has $P = (\wedge^2$ part$) \cdot (\text{permutation part on } A[2])$, so these are the candidates for Kummer structures.  Empty if none, null if not computed |
-| realizable_k3 | smallint | 1 if this class is known to contain a K3 surface over $\mathbb{F}_q$, $-1$ if it is known not to, 0 otherwise.  Necessary conditions include $\rho \ge 1$, `ej_condition` and `has_count_growth`.  The ordinary case can be decided using Taelman's description of ordinary K3 surfaces |
+| realizable_k3 | smallint | 1 if this class is known to contain a K3 surface over $\mathbb{F}_q$, $-1$ if it is known not to, 0 otherwise.  Necessary conditions include $\rho \ge 1$, `ej_condition` and `has_count_growth`.  A positive value must come with a proof of existence.  For ordinary classes, Taelman's description of ordinary K3 surfaces is fully faithful unconditionally, but essential surjectivity assumes potential semistable reduction.  That is known in some cases (e.g. Taelman's Theorem 4.6: geometric Picard rank $\ge 12$ and $p \ge 5$), so existence in characteristics $2$ and $3$ needs separate justification |
 | realizable_nck3 | smallint | same for noncommutative K3 surfaces (K3 categories over $\mathbb{F}_q$, e.g. twisted K3 surfaces and Kuznetsov components), with $M$ the K3-type part of the Mukai motive |
-| realizable_cubic | smallint | same for cubic fourfolds, with $M = H^4_{prim}(Y)(1)$.  A realization comes with a positive definite marking: an embedding of a lattice with Gram matrix $\begin{pmatrix}3 & a\\ a & b\end{pmatrix}$ of discriminant $d = 3b - a^2$ (Hassett's special cubic fourfolds) into the algebraic classes |
+| realizable_cubic | smallint | same for cubic fourfolds, with $M = H^4_{prim}(Y)(2)$.  The relevant lattice is the positive definite lattice $A(Y)$ of algebraic classes in the full $H^4(Y, \mathbb{Z})$, which contains $h^2$ (norm $3$).  Hassett markings are saturated rank 2 sublattices $\langle h^2, v\rangle$ with Gram matrix $\begin{pmatrix}3 & a\\ a & b\end{pmatrix}$ and discriminant $d = 3b - a^2$.  The algebraic classes in $M$ form the even lattice $A(Y) \cap (h^2)^\perp$, which is not the Néron–Severi lattice of a K3 surface (see `k3_fq_lattices`) |
 | realizable_nccubic | smallint | same for Kuznetsov components of cubic fourfolds |
 | realizable_gm | smallint | same for Gushel–Mukai fourfolds |
 | realizable_ncgm | smallint | same for Kuznetsov components of Gushel–Mukai fourfolds |
 | realizable_verra | smallint | same for Verra fourfolds |
 | realizable_ncverra | smallint | same for Kuznetsov components of Verra fourfolds |
 | realizable_kummer | smallint | same for Kummer surfaces $\mathrm{Km}(A)$ over $\mathbb{F}_q$.  It is $-1$ if `kummer_av_classes` is empty or `realizable_k3` is $-1$.  Null in characteristic 2 |
-| polarization_degrees | integer[] | for ordinary classes, the degrees $2d \le 100$ such that the class contains a K3 surface with a primitive polarization of degree $2d$ (via Taelman's theorem).  Null if not computed |
+| polarization_degrees | integer[] | for ordinary classes, the degrees $2d \le 100$ such that the class contains a K3 surface with a primitive polarization of degree $2d$, via Taelman's theorem; subject to the same existence hypotheses as `realizable_k3`.  Null if not computed |
 | num_lattices | integer | number of rows in `k3_fq_lattices` for this class (null if the lattice computation has not been run for this class) |
 | min_ample_degree | integer | minimum of `k3_fq_lattices.min_ample_degree` over the lattices for this class |
 | min_quasi_ample_degree | integer | minimum of `k3_fq_lattices.min_quasi_ample_degree` over the lattices for this class |

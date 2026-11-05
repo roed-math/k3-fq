@@ -45,7 +45,7 @@ The {{ KNOWL('k3.fq.lattices', 'candidate Néron–Severi lattices') }} of a cla
 
 **Title:** Motive of K3 type over a finite field
 
-A **motive of K3 type** over a finite field $\F_q$ is a 22-dimensional motive $M$ of weight $0$ that looks like the second cohomology of a K3 surface: for a K3 surface $X/\F_q$ it is $H^2(X)(1)$; for a cubic fourfold $Y$ it is $H^4_{\mathrm{prim}}(Y)(1)$; for a Gushel–Mukai fourfold it is $H^4_{\mathrm{van}}(Y)(1)$; and for a Verra fourfold it is the K3-type piece of $H^4(Y)(1)$.
+A **motive of K3 type** over a finite field $\F_q$ is a 22-dimensional motive $M$ of weight $0$ that looks like the second cohomology of a K3 surface: for a K3 surface $X/\F_q$ it is $H^2(X)(1)$; for a cubic fourfold $Y$ it is $H^4_{\mathrm{prim}}(Y)(2)$; for a Gushel–Mukai fourfold it is $H^4_{\mathrm{van}}(Y)(2)$; and for a Verra fourfold it is the K3-type piece of $H^4(Y)(2)$.  In each case $P(T) = q\det(1 - \mathrm{Frob}\, T \mid M)$.
 
 The LMFDB classifies such motives by the polynomial
 $$P(T) = q \det\left(1 - q^{-1}\mathrm{Frob}\, T \mid H^2_{\text{ét}}(X_{\overline{\F}_q}, \Q_\ell)\right) = q\prod_{i=1}^{22}(1 - \alpha_i T) = q + a_1 T + \cdots + a_{22}T^{22} \in \Z[T],$$
@@ -240,13 +240,13 @@ In particular $\#X(\F_q) = 1 + q^2 - a_1$.
 
 The LMFDB also lists the point counts of fourfolds of K3 type whose K3-type piece is in the class, assuming that the rest of their cohomology consists of Tate classes defined over $\F_q$:
 
-- a cubic fourfold $Y$ ($b_2 = 1$, $b_4 = 23$, $M = H^4_{\mathrm{prim}}(Y)(1)$):
+- a cubic fourfold $Y$ ($b_2 = 1$, $b_4 = 23$, $M = H^4_{\mathrm{prim}}(Y)(2)$):
 $$1 + q^n + q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n;$$
-- a Gushel–Mukai fourfold ($b_2 = 1$, $b_4 = 24$, $M = H^4_{\mathrm{van}}(Y)(1)$):
+- a Gushel–Mukai fourfold ($b_2 = 1$, $b_4 = 24$, $M = H^4_{\mathrm{van}}(Y)(2)$):
 $$1 + q^n + 2q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n;$$
 - a Verra fourfold, a double cover of $\mathbb{P}^2 \times \mathbb{P}^2$ branched along a divisor of bidegree $(2,2)$ ($\chi = 30$, $b_2 = b_6 = 2$, $b_4 = 24$):
 $$1 + 2q^n + 2q^{2n} + 2q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n.$$
-Here the 22-dimensional K3-type piece of $H^4(Y)(1)$ is taken to contain one of the three algebraic classes pulled back from $\mathbb{P}^2\times\mathbb{P}^2$.  [Check against the intended definition of the K3-type piece of a Verra fourfold.]
+Here the 22-dimensional K3-type piece of $H^4(Y)(2)$ is taken to contain one of the three algebraic classes pulled back from $\mathbb{P}^2\times\mathbb{P}^2$.  [Check against the intended definition of the K3-type piece of a Verra fourfold.]
 
 These are virtual counts: for classes that do not contain such a variety they may be negative.
 
@@ -282,9 +282,9 @@ A class of {{ KNOWL('k3.fq.k3_polynomial', 'motives of K3 type') }} over $\F_q$ 
 
 The types are:
 - **K3 surfaces** $X$, with $M = H^2(X)(1)$;
-- **cubic fourfolds** $Y$, with $M = H^4_{\mathrm{prim}}(Y)(1)$.  A realization comes with a positive definite marking: an embedding of a lattice with Gram matrix $\begin{pmatrix} 3 & a \\ a & b\end{pmatrix}$, of discriminant $3b - a^2$, into the algebraic classes (compare Hassett's special cubic fourfolds);
-- **Gushel–Mukai fourfolds**, with $M = H^4_{\mathrm{van}}(Y)(1)$;
-- **Verra fourfolds**, with $M$ the K3-type piece of $H^4(Y)(1)$ (see {{ KNOWL('k3.fq.point_counts', 'point counts') }});
+- **cubic fourfolds** $Y$, with $M = H^4_{\mathrm{prim}}(Y)(2)$.  A realization comes with a positive definite marking: an embedding of a lattice with Gram matrix $\begin{pmatrix} 3 & a \\ a & b\end{pmatrix}$, of discriminant $3b - a^2$, into the algebraic classes (compare Hassett's special cubic fourfolds);
+- **Gushel–Mukai fourfolds**, with $M = H^4_{\mathrm{van}}(Y)(2)$;
+- **Verra fourfolds**, with $M$ the K3-type piece of $H^4(Y)(2)$ (see {{ KNOWL('k3.fq.point_counts', 'point counts') }});
 - **Kummer surfaces** $\mathrm{Km}(A)$ of abelian surfaces $A/\F_q$ (see {{ KNOWL('k3.fq.kummer', 'Kummer candidates') }});
 - the **noncommutative** versions of the first four: K3 categories over $\F_q$, such as twisted K3 surfaces and the Kuznetsov components of cubic, Gushel–Mukai and Verra fourfolds, with $M$ the K3-type part of the Mukai motive.
 

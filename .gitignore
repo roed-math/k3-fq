@@ -1,5 +1,4 @@
-data
-data/
+/data
 bin/
 __pycache__/
 *.pyc

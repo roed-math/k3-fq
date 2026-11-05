@@ -371,7 +371,10 @@ class K3Poly:
         # (otherwise e.g. slopes 3/4, 1, 5/4 over F_4 would look supersingular)
         D["newton_elevation"] = elev if k3np else None
         D["newton_coelevation"] = coelev if k3np else None
-        D["is_ordinary"] = (h == 1)
+        # ordinary means slope 0 occurs, i.e. p does not divide a_1 (h == 1 alone is
+        # not enough for non-K3 Newton polygons over non-prime fields)
+        D["is_ordinary"] = (coeffs[1] % p != 0)
+        assert not D["is_ordinary"] or (k3np and h == 1)
         D["is_supersingular"] = (h == 0)
 
         # Cyclotomic part / Picard ranks / Artin-Tate
