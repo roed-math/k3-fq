@@ -429,9 +429,9 @@ class K3Poly:
         for kind in VARIETY_TYPES:
             N = self.counts(kind, nmax)
             D[kind + "_counts"] = N[1:NUM_COUNTS + 1]
+            D[kind + "_count"] = N[1]
             growth[kind] = closed_point_counts_nonnegative(N, nmax)
         N = self.counts("k3", nmax)
-        D["k3_count"] = N[1]
         D["has_nonnegative_counts"] = all(c >= 0 for c in N[1:])
         D["has_count_growth"] = growth["k3"]
         D["is_pointless"] = (N[1] == 0)

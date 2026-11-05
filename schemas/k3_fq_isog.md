@@ -64,8 +64,11 @@ Labels are ordered by $q$, then $\bar\rho$, then the number encoded by `c`, then
 | k3_counts | numeric[] | $\#X(\mathbb{F}_{q^n}) = 1 + q^{2n} + q^n\sum_i \alpha_i^n$ for $n = 1, \ldots, 10$: the point counts of a K3 surface in this class |
 | k3_count | bigint | $\#X(\mathbb{F}_q)$, duplicated for searching (equal to $1 + q^2 - a_1$) |
 | cubic_counts | numeric[] | $1 + q^n + q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a cubic fourfold $Y$ with $H^4_{prim}(Y)(2)$ in this class |
+| cubic_count | bigint | the first entry of `cubic_counts` (the number of $\mathbb{F}_q$-points of a cubic fourfold in this class), duplicated for searching |
 | gm_counts | numeric[] | $1 + q^n + 2q^{2n} + q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a Gushel–Mukai fourfold with vanishing cohomology in this class |
+| gm_count | bigint | the first entry of `gm_counts` (the number of $\mathbb{F}_q$-points of a Gushel–Mukai fourfold in this class), duplicated for searching |
 | verra_counts | numeric[] | $1 + 2q^n + 2q^{2n} + 2q^{3n} + q^{4n} + q^{2n}\sum_i\alpha_i^n$ for $n = 1,\ldots,10$: the point counts of a Verra fourfold whose K3-type piece is in this class (see the notes below) |
+| verra_count | bigint | the first entry of `verra_counts` (the number of $\mathbb{F}_q$-points of a Verra fourfold in this class), duplicated for searching |
 | has_nonnegative_counts | boolean | whether $\#X(\mathbb{F}_{q^n}) \ge 0$ for all $n \ge 1$ (as a K3 surface).  This only needs checking for the finitely many $n$ with $q^n < 22$ |
 | has_count_growth | boolean | whether the number of closed points of degree $n$, $\frac{1}{n}\sum_{d \mid n}\mu(n/d)\#X(\mathbb{F}_{q^d})$, is nonnegative for every $n \ge 1$ (as a K3 surface).  This implies $\#X(\mathbb{F}_{q^m}) \ge \#X(\mathbb{F}_{q^n})$ whenever $n \mid m$, e.g. more points over $\mathbb{F}_{16}$ than over $\mathbb{F}_4$ |
 | is_pointless | boolean | whether `k3_count` is $0$ |

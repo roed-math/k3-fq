@@ -14,7 +14,7 @@ This is a new LMFDB section, "Motives of K3 type" over F_q.  Each row is a degre
 | Schemas | `schemas/k3_fq_isog.md`, `schemas/k3_fq_lattices.md` in the compute repo | identical to PR #75 |
 | Schema PR | https://github.com/jvoight/k3s-lmfdb/pull/75 (from roed-math branch `k3-fq-schemas`, head `d004a16`; mimir worktree `/scratch/claudeF/k3s-lmfdb-schemas`) | open, no review yet |
 | LMFDB front end | roed-math/lmfdb branch `k3fq`, head `78bb194a3`, 9 commits on upstream main `8aedadac9`; mimir worktree `/scratch/claudeF/lmfdb-k3fq` | pushed; **no PR to LMFDB opened** |
-| Knowl drafts (37) | `knowls/k3_fq_knowls.md` in the compute repo | not in any database yet |
+| Knowls | `knowls/k3_knowls.yaml` (23 knowls for the search form and home page, `k3.*` for general K3 notions and `k3.fq.*` for finite fields) and `knowls/k3_rcs_knowls.yaml` (the five `rcs.*.k3.fq` pages, with TODOs), both for `db.knowldb.yaml_import`; `knowls/k3_fq_knowls.md` has 4 older drafts used only on class pages | not in any database yet |
 | Test upload | `test_upload/k3_fq_isog_test.txt` (12 rows) and `test_upload/create_k3_fq_isog.py` (the `create_table` call, generated from the schema by `scripts/make_create_table.py`) | never run against a real database |
 | Kedlaya's root-unitary | git submodule `external/root-unitary` (pinned at `d046f6c`); `make` builds `bin/weilpoly` from `c-script/weilpoly.c` against Sage's FLINT | |
 | Sample data (mimir) | `/scratch/claudeF/work/k3fq_sample_data/` (pipeline dirs), combined export `/scratch/claudeF/work/k3fq_sample/k3_fq_isog.txt` (4,809 rows, q = 2, 3, 4) | readable by all; only claudeF can write.  The same sample with the new labels is `/scratch/claudeM/work/k3fq_sample/k3_fq_isog.txt` (pipeline dirs in `/scratch/claudeM/work/k3fq_sample_data/`) |
@@ -45,7 +45,7 @@ Not implemented (exported as null):
 2. **Lovelace run.**  `sh scripts/lovelace_counts.sh` gives the exact F_2 total.  All real data generation belongs on lovelace.  claudeF cannot SSH there, so David runs it.  mimir is shared and often heavily loaded (load 100–160 seen), so keep jobs there tiny and niced.
 3. **Database test.**  Run `create_k3_fq_isog.py`, then `copy_from` the 12-row file, then `K3FqStats().setup()`.  Check real Postgres behaviour of `$startswith` on `poly_str`, `$overlaps` on `galois_groups`, and null ordering.  Add indexes on (q, poly) and on `poly_str` with `text_pattern_ops`.
 4. **LMFDB integration.**
-   - Create the `k3.fq.*` and `rcs.*.k3.fq` knowls from the drafts.  Several have [bracketed] placeholders for references, ranges and methods.
+   - Import the knowls with `db.knowldb.yaml_import`.  The `rcs.*.k3.fq` drafts have TODOs (authors, cutoffs, citation), and four class-page knowls are still in the old markdown drafts.
    - Add the k3fq link to the `motives.about` knowl (it renders `/Motive`).
    - Open the LMFDB PR when David says so.
 5. **Mathematical conventions to confirm with David.**

@@ -183,3 +183,12 @@ def test_count_growth_definition():
 def test_sign_minus_construction():
     c = [2, 1, 0, 1, 2]
     assert R(times_one_minus_T2(c)) == (1 - T ** 2) * R(c)
+
+
+def test_fourfold_counts(example):
+    # the F_q counts of the fourfolds are affine in the K3 count
+    P, D = example
+    q, n = 2, D["k3_count"]
+    assert D["cubic_count"] == 1 + q**2 + q**4 + q * n == D["cubic_counts"][0]
+    assert D["gm_count"] == D["cubic_count"] + q**2 == D["gm_counts"][0]
+    assert D["verra_count"] == 1 + q + 2 * q**2 + q**3 + q**4 + q * n == D["verra_counts"][0]
