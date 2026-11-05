@@ -113,7 +113,7 @@ $$1 - \tfrac{1}{h}\ (h \text{ times}),\quad 1\ (22 - 2h \text{ times}),\quad 1 +
 where $h$ is the {{ KNOWL('k3.fq.height', 'height') }}, or all equal to $1$.  The class has a **K3 Newton polygon** if its slopes have this shape for some $1 \le h \le 11$ or are all equal to $1$.  This is automatic when $q$ is prime, but over non-prime fields there are polynomials whose Newton polygon does not have this shape (for example $P = 2P'$ over $\F_4$, with $P'$ of K3 type over $\F_2$).
 
 A class is
-- **ordinary** if $h = 1$, equivalently if $p$ does not divide $a_1$;
+- **ordinary** if slope $0$ occurs, equivalently if $p$ does not divide $a_1$.  Then the Newton polygon is a K3 Newton polygon with $h = 1$; over non-prime fields, $h = 1$ alone does not imply ordinarity when the Newton polygon is not of K3 type;
 - **supersingular** if all slopes equal $1$ (height $h = \infty$), equivalently if every root of $P(T)$ is a root of unity, equivalently if the {{ KNOWL('k3.fq.geometric_picard_rank', 'geometric Picard rank') }} is $22$.
 
 ## k3.fq.height
@@ -288,7 +288,7 @@ The types are:
 - **Kummer surfaces** $\mathrm{Km}(A)$ of abelian surfaces $A/\F_q$ (see {{ KNOWL('k3.fq.kummer', 'Kummer candidates') }});
 - the **noncommutative** versions of the first four: K3 categories over $\F_q$, such as twisted K3 surfaces and the Kuznetsov components of cubic, Gushel–Mukai and Verra fourfolds, with $M$ the K3-type part of the Mukai motive.
 
-Necessary conditions for a class to contain a K3 surface include $\rho \ge 1$ (where $\rho$ is the {{ KNOWL('k3.fq.picard_rank', 'Picard rank') }}), the {{ KNOWL('k3.fq.ej_condition', 'Artin–Tate condition') }} and {{ KNOWL('k3.fq.has_count_growth', 'count growth') }}.  For ordinary classes the question can be decided using Taelman's description of ordinary K3 surfaces over finite fields in terms of their canonical lifts.  [Describe the methods used for the other types, and add references.]
+Necessary conditions for a class to contain a K3 surface include $\rho \ge 1$ (where $\rho$ is the {{ KNOWL('k3.fq.picard_rank', 'Picard rank') }}), the {{ KNOWL('k3.fq.ej_condition', 'Artin–Tate condition') }} and {{ KNOWL('k3.fq.has_count_growth', 'count growth') }}.  A positive answer needs a proof of existence.  For ordinary classes, Taelman's description of ordinary K3 surfaces in terms of their canonical lifts is fully faithful unconditionally.  Its essential surjectivity, which is what gives existence, assumes potential semistable reduction.  That is known in some cases (e.g. geometric Picard rank at least $12$ and $p \ge 5$), so existence in characteristics $2$ and $3$ needs separate justification.  [Describe the methods used for the other types, and add references.]
 
 ## k3.fq.kummer
 
@@ -304,7 +304,7 @@ The **Kummer candidates** of a {{ KNOWL('k3.fq.k3_polynomial', 'motive of K3 typ
 
 **Title:** Polarization degrees
 
-For an ordinary {{ KNOWL('k3.fq.k3_polynomial', 'motive of K3 type') }}, the **polarization degrees** are the integers $2d \le 100$ such that the class contains a K3 surface with a primitive polarization of degree $2d$.  They are determined using Taelman's description of ordinary K3 surfaces over finite fields.  They are not computed for other classes.
+For an ordinary {{ KNOWL('k3.fq.k3_polynomial', 'motive of K3 type') }}, the **polarization degrees** are the integers $2d \le 100$ such that the class contains a K3 surface with a primitive polarization of degree $2d$.  They are determined using Taelman's description of ordinary K3 surfaces over finite fields, subject to the same existence hypotheses as for {{ KNOWL('k3.fq.realizability', 'realizability') }}.  They are not computed for other classes.
 
 ## k3.fq.primitive
 

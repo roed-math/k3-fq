@@ -21,13 +21,15 @@ NUM_COUNTS = 10  # number of point counts stored
 
 # The 22-dimensional motive M sits inside the cohomology of each type of
 # variety; outside M everything is spanned by Tate classes defined over F_q.
-# For each type we record (weight shift w, [c_0, c_1, ...]) meaning
-#   #Y(F_{q^n}) = sum_j c_j q^{jn} + q^{wn} Tr(Frob^n | M(-1)) / q^n
-# i.e. the trace contribution is q^{(w-1)n} t_n with t_n = Tr(Frob^n | H^2).
+# M has weight 0 and sits in the cohomology as M(-w).  For each type we record
+# (w, [c_0, c_1, ...]) meaning
+#   #Y(F_{q^n}) = sum_j c_j q^{jn} + q^{wn} Tr(Frob^n | M),
+# i.e. the trace contribution is q^{(w-1)n} t_n with t_n = q^n Tr(Frob^n | M),
+# the trace on H^2 of a K3 surface in the class.
 VARIETY_TYPES = {
     # K3 surface: H^0 + H^2 + H^4, M = H^2(1)
     "k3": (1, [1, 0, 1]),
-    # cubic fourfold: b_2 = 1, H^4 = Q h^2 + H^4_prim, M = H^4_prim(1)
+    # cubic fourfold: b_2 = 1, H^4 = Q h^2 + H^4_prim, M = H^4_prim(2)
     "cubic": (2, [1, 1, 1, 1, 1]),
     # Gushel-Mukai fourfold: b_2 = 1, H^4 = 2 Tate classes + H^4_van
     "gm": (2, [1, 1, 2, 1, 1]),
