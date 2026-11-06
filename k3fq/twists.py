@@ -211,7 +211,9 @@ def _minimal_elements(ns):
     return [n for i, n in enumerate(ns) if not any(n % d == 0 for d in ns[:i])]
 
 
-# Base change labels are only recorded for q^n < 2^BC_LABEL_BITS
+# Base change labels are only recorded, and twist degrees only checked by exact
+# base change, when n * (number of bits of q) <= BC_LABEL_BITS; this implies
+# q^n < 2^BC_LABEL_BITS, but is a little stricter
 BC_LABEL_BITS = 128
 
 
@@ -234,7 +236,7 @@ def minimal_twist_degrees(rowA, rowB, A=None, B=None):
     minimal n for both are minimal elements of lcms of the minimal ones.
     Their minimal elements divide the lcm of the cyclotomic orders, and of the
     orders of the ratios of transcendental roots, respectively.  Each n with
-    q^n < 2^BC_LABEL_BITS is also checked by exact base change.
+    n * q.nbits() <= BC_LABEL_BITS is also checked by exact base change.
     """
     eps = RealField(PREC)(2) ** (-PREC // 2)
     if A is None:
@@ -261,7 +263,7 @@ def class_twists(members, angles):
     """
     ``members``: rows in one twist class (at most MAX_TWISTS of them);
     ``angles``: label -> output of ``_all_angles``.  Returns label -> list of
-    [label', bc_label, n], with bc_label None when q^n >= 2^BC_LABEL_BITS.
+    [label', bc_label, n], with bc_label None when n * q.nbits() > BC_LABEL_BITS.
     """
     twists = {r["label"]: [] for r in members}
     bits = ZZ(members[0]["q"]).nbits()

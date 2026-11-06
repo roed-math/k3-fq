@@ -9,6 +9,7 @@ live under the data directory:
     twists/q{q}.txt           TWIST_COLUMNS
     basechange/q{q}.txt       BASECHANGE_COLUMNS
     kummer/q{q}.txt           KUMMER_COLUMNS
+    census/q{q}.txt           realizable_k3 = 1 for classes known to contain a K3 surface
     export/k3_fq_isog.q{q}.txt  all columns, ready for psycodict's copy_from
 """
 import glob
@@ -26,7 +27,7 @@ from sage.all import ZZ, pari
 from .columns import (ISOG_COLUMNS, ISOG_TYPES, TWIST_COLUMNS, BASECHANGE_COLUMNS,
                       KUMMER_COLUMNS)
 from .cyclotomic import R, split_cyclotomic
-from .labels import signed_cremona_letter_code, label_sort_key
+from .labels import label_sort_key, poly_to_label
 from .pgformat import read_file, write_file
 from . import twists as tw
 
@@ -252,6 +253,60 @@ def kummer_stage(q, datadir):
 
 
 # ----------------------------------------------------------------------
+# census: classes known to contain a K3 surface
+
+# Kedlaya and Sutherland, "A census of zeta functions of quartic K3 surfaces
+# over F_2": the zeta functions of all smooth quartic surfaces in P^3 over F_2.
+QUARTIC_CENSUS_F2 = os.path.join(ROOT, "external", "root-unitary", "k3-quartic-f2", "k3final.txt")
+
+
+def quartic_census_labels(fname=QUARTIC_CENSUS_F2):
+    """
+    The labels of the classes over F_2 that contain a smooth quartic surface.
+    Each line of the census file is ``[f, [ids]]``, where f(x) = P(x)/(1 - x)
+    (a quartic surface has Picard rank at least 1) and the ids number the
+    quartics with this zeta function.
+    """
+    from sage.all import PolynomialRing, ZZ
+    Rx = PolynomialRing(ZZ, "x")
+    x = Rx.gen()
+    labels = set()
+    with open(fname) as F:
+        for line in F:
+            line = line.strip()
+            if not line:
+                continue
+            f = Rx(line[1:line.index(", [")])
+            labels.add(poly_to_label((f * (1 - x)).list()))
+    return labels
+
+
+def census_stage(q, datadir, census_file=None):
+    """
+    Set realizable_k3 = 1 for the classes known to contain a K3 surface over
+    F_q.  At present this is the quartic census over F_2.  The output only has
+    rows for those classes; the export keeps the basic stage's value for the
+    others.  A census class that fails one of the necessary conditions of the
+    basic stage would be a bug, so it raises an error.
+    """
+    if q != 2:
+        print("q=%s: no census available" % q)
+        return 0
+    known = quartic_census_labels(census_file or QUARTIC_CENSUS_F2)
+    rows = []
+    for row in iter_rows(datadir, q, ["label", "realizable_k3"]):
+        if row["label"] in known:
+            if row["realizable_k3"] == -1:
+                raise RuntimeError("%s contains a smooth quartic but fails a necessary condition" % row["label"])
+            rows.append({"label": row["label"], "realizable_k3": 1})
+    os.makedirs(os.path.join(datadir, "census"), exist_ok=True)
+    write_file(os.path.join(datadir, "census", "q%s.txt" % q),
+               [("label", "text"), ("realizable_k3", ISOG_TYPES["realizable_k3"])], rows)
+    print("q=%s: %s classes in the quartic census, %s of them in the data" % (q, len(known), len(rows)))
+    return len(rows)
+
+
+# ----------------------------------------------------------------------
 # export
 
 def _load_by_label(fname):
@@ -272,6 +327,12 @@ def export_stage(q, datadir):
             print("q=%s: no %s data; those columns will be null" % (q, stage))
         else:
             extra[stage] = data
+    # only lists the classes known to contain a K3 surface
+    census = _load_by_label(os.path.join(datadir, "census", "q%s.txt" % q))
+    if census is None:
+        census = {}
+        if q == 2:
+            print("q=2: no census data; realizable_k3 only reflects the necessary conditions")
     outdir = os.path.join(datadir, "export")
     os.makedirs(outdir, exist_ok=True)
 
@@ -285,6 +346,7 @@ def export_stage(q, datadir):
                 row["number_fields"] = [fields[f]["nf_label"] or "" for f in facs]
             for data in extra.values():
                 row.update(data[row["label"]])
+            row.update(census.get(row["label"], {}))
             yield row
     out = os.path.join(outdir, "k3_fq_isog.q%s.txt" % q)
     write_file(out, ISOG_COLUMNS, rows())

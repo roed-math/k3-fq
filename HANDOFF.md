@@ -15,14 +15,14 @@ This is a new LMFDB section, "Motives of K3 type" over F_q.  Each row is a degre
 | Schema PR | https://github.com/jvoight/k3s-lmfdb/pull/75 (from roed-math branch `k3-fq-schemas`, head `d004a16`; mimir worktree `/scratch/claudeF/k3s-lmfdb-schemas`) | open, no review yet |
 | LMFDB front end | roed-math/lmfdb branch `k3fq`, head `78bb194a3`, 9 commits on upstream main `8aedadac9`; mimir worktree `/scratch/claudeF/lmfdb-k3fq` | pushed; **no PR to LMFDB opened** |
 | Knowls | `knowls/k3_knowls.yaml` (27 knowls: everything the section links to, `k3.*` for general K3 notions and `k3.fq.*` for finite fields) and `knowls/k3_rcs_knowls.yaml` (the five `rcs.*.k3.fq` pages; acknowledgment and citation still have TODOs), both for `db.knowldb.yaml_import`; see `knowls/README.md` | not in any database yet |
-| Test upload | `test_upload/k3_fq_isog_test.txt` (12 rows) and `test_upload/create_k3_fq_isog.py` (the `create_table` call, generated from the schema by `scripts/make_create_table.py`) | never run against a real database |
+| Test upload | `test_upload/k3_fq_isog_test.txt` (13 rows) and `test_upload/create_k3_fq_isog.py` (the `create_table` call, generated from the schema by `scripts/make_create_table.py`) | never run against a real database |
 | Kedlaya's root-unitary | git submodule `external/root-unitary` (pinned at `d046f6c`); `make` builds `bin/weilpoly` from `c-script/weilpoly.c` against Sage's FLINT | |
 | Sample data (mimir) | `/scratch/claudeF/work/k3fq_sample_data/` (pipeline dirs), combined export `/scratch/claudeF/work/k3fq_sample/k3_fq_isog.txt` (4,809 rows, q = 2, 3, 4) | readable by all; only claudeF can write.  The same sample with the new labels is `/scratch/claudeM/work/k3fq_sample/k3_fq_isog.txt` (pipeline dirs in `/scratch/claudeM/work/k3fq_sample_data/`) |
 | Front-end harness (mimir) | `/scratch/claudeF/work/k3fq_frontend/`: `run_harness.py [--sample=FILE]` (Flask test client against an in-memory fake table), `run_unit_tests.py --sample=FILE`, `serve.py` (port 37791) | run from the LMFDB worktree with `sage -python` |
 
 ## Pipeline (compute repo)
 
-The stages are `enumerate`, `basic`, `fields`, `twists`, `basechange`, `kummer`, `export` and `counts`; run them as `sage -python k3fq.py ...`.  The README has the details.  Tests: `make test` (73 pass; a fresh `git clone --recursive` passes too).
+The stages are `enumerate`, `basic`, `fields`, `twists`, `basechange`, `kummer`, `census`, `export` and `counts`; run them as `sage -python k3fq.py ...`.  The README has the details.  Tests: `make test` (85 pass; a fresh `git clone --recursive` passes too).
 
 Key design points:
 - Labels are `q.ρ.c.t` (`k3fq/labels.py`): the geometric Picard rank, the index `c` of the cyclotomic part among those of degree ρ̄, and the coefficients of the transcendental part in balanced base 26 (`n` = 0), all padded to one width and concatenated.  They replaced `q.s.c1_..._c11` on 2026-11-05, because large cyclotomic parts made those 25–58 characters long (median 32 in the sample; the new median is 11).  The geometric class representative of a complete twist class always has `c = a`.
@@ -37,13 +37,13 @@ Not implemented (exported as null):
 - LMFDB number-field labels (needs polredabs and an `nf_fields` lookup).
 - `polarization_degrees` (Taelman's theorem; positive results need the existence hypotheses stated in the schema).
 - The whole `k3_fq_lattices` computation (Oscar, Brandhorst–Muller).
-- Positive realizability.  Only necessary conditions give −1 so far.
+- Positive realizability beyond the quartic census over F_2 (the `census` stage sets `realizable_k3 = 1` for its 52,755 classes; all of them pass our necessary conditions).  Otherwise only necessary conditions are used, giving −1.
 
 ## Open decisions and next steps
 
 1. **Cutoffs (decided 2026-11-05).**  All classes for q = 2; geometric Picard rank ρ̄ ≥ 16 for q = 3, ≥ 18 for q = 4, and ≥ 20 for q = 5, 7, 8 (recorded in `rcs.cande.k3.fq`).  The q ≥ 3 part is 7,868,568 rows (about 1.44 times F_2), so `k3_fq_isog` has about 13.35M rows in all; all of F_2 is about 5.48M classes (5,403,212 with ρ̄ ≥ 2, plus a ρ̄ = 0 part of about 80k, not yet pinned down).  The sign −1 count over F_2 is 1,485,591.  Cutoffs must be nondecreasing in q; the primitivity logic relies on this.  Exact counts for all q ≤ 64 are reproduced by `k3fq.py counts 3-64 --max-degree 6`.
 2. **Lovelace run.**  `sh scripts/lovelace_counts.sh` gives the exact F_2 total.  All real data generation belongs on lovelace.  claudeF cannot SSH there, so David runs it.  mimir is shared and often heavily loaded (load 100–160 seen), so keep jobs there tiny and niced.
-3. **Database test.**  Run `create_k3_fq_isog.py`, then `copy_from` the 12-row file, then `K3FqStats().setup()`.  Check real Postgres behaviour of `$startswith` on `poly_str`, `$overlaps` on `galois_groups`, and null ordering.  Add indexes on (q, poly) and on `poly_str` with `text_pattern_ops`.
+3. **Database test.**  Run `create_k3_fq_isog.py`, then `copy_from` the 13-row file, then `K3FqStats().setup()`.  Check real Postgres behaviour of `$startswith` on `poly_str`, `$overlaps` on `galois_groups`, and null ordering.  Add indexes on (q, poly) and on `poly_str` with `text_pattern_ops`.
 4. **LMFDB integration.**
    - Import the knowls with `db.knowldb.yaml_import` (see `knowls/README.md`).  `rcs.ack.k3.fq` and `rcs.cite.k3.fq` still have TODOs.
    - Add the k3fq link to the `motives.about` knowl (it renders `/Motive`).

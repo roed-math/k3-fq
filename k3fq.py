@@ -27,6 +27,7 @@ def main(argv=None):
     for name, helptext in [("fields", "Galois groups missed by the certificate (Magma) and reduced field polynomials"),
                            ("twists", "twist classes and minimal twist degrees"),
                            ("kummer", "Kummer candidates from abelian surfaces in the LMFDB"),
+                           ("census", "classes known to contain a K3 surface (the quartic census over F_2)"),
                            ("export", "assemble the LMFDB upload file")]:
         p = sub.add_parser(name, help=helptext)
         p.add_argument("q", type=int, nargs="+")

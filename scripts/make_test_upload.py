@@ -34,7 +34,7 @@ def supersingular_rows():
 
 def pick(rows):
     """
-    A dozen rows with different features, in a fixed order.
+    A dozen or so rows with different features, in a fixed order.
     """
     by_label = {r["label"]: r for r in rows}
     chosen = []
@@ -54,6 +54,7 @@ def pick(rows):
                 break
     take(lambda r: r["q"] == 2 and r["sign"] == -1 and r["realizable_k3"] == 0)
     take(lambda r: r["q"] == 2 and r["sign"] == 1 and r["is_ordinary"] and r["realizable_k3"] == 0)
+    take(lambda r: r["q"] == 2 and r["realizable_k3"] == 1)   # in the quartic census
     take(lambda r: r["q"] == 2 and r["is_pointless"])
     take(lambda r: r["q"] == 2 and (r["height"] or 0) >= 3)
     take(lambda r: r["q"] == 3 and r["kummer_av_classes"])
