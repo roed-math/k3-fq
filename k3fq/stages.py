@@ -9,7 +9,7 @@ live under the data directory:
     twists/q{q}.txt           TWIST_COLUMNS
     basechange/q{q}.txt       BASECHANGE_COLUMNS
     kummer/q{q}.txt           KUMMER_COLUMNS
-    census/q{q}.txt           realizable_k3 = 1 for classes known to contain a K3 surface
+    census/q{q}.txt           CENSUS_COLUMNS, for the classes known to contain a K3 surface
     export/k3_fq_isog.q{q}.txt  all columns, ready for psycodict's copy_from
 """
 import glob
@@ -25,7 +25,7 @@ from multiprocessing import Pool
 from sage.all import ZZ, pari
 
 from .columns import (ISOG_COLUMNS, ISOG_TYPES, TWIST_COLUMNS, BASECHANGE_COLUMNS,
-                      KUMMER_COLUMNS)
+                      KUMMER_COLUMNS, CENSUS_COLUMNS)
 from .cyclotomic import R, split_cyclotomic
 from .labels import label_sort_key, poly_to_label
 from .pgformat import read_file, write_file
@@ -284,10 +284,13 @@ def quartic_census_labels(fname=QUARTIC_CENSUS_F2):
 def census_stage(q, datadir, census_file=None):
     """
     Set realizable_k3 = 1 for the classes known to contain a K3 surface over
-    F_q.  At present this is the quartic census over F_2.  The output only has
-    rows for those classes; the export keeps the basic stage's value for the
-    others.  A census class that fails one of the necessary conditions of the
-    basic stage would be a bug, so it raises an error.
+    F_q.  At present this is the quartic census over F_2, whose classes also
+    get polarization degree 4: the hyperplane class of a quartic surface is a
+    primitive polarization of degree 4 defined over F_2.  The list is not
+    complete (polarization_degrees_complete = False).  The output only has
+    rows for those classes; the export keeps the other stages' values (and
+    nulls) for the others.  A census class that fails one of the necessary
+    conditions of the basic stage would be a bug, so it raises an error.
     """
     if q != 2:
         print("q=%s: no census available" % q)
@@ -298,10 +301,11 @@ def census_stage(q, datadir, census_file=None):
         if row["label"] in known:
             if row["realizable_k3"] == -1:
                 raise RuntimeError("%s contains a smooth quartic but fails a necessary condition" % row["label"])
-            rows.append({"label": row["label"], "realizable_k3": 1})
+            rows.append({"label": row["label"], "realizable_k3": 1,
+                         "polarization_degrees": [4], "polarization_degrees_complete": False})
     os.makedirs(os.path.join(datadir, "census"), exist_ok=True)
     write_file(os.path.join(datadir, "census", "q%s.txt" % q),
-               [("label", "text"), ("realizable_k3", ISOG_TYPES["realizable_k3"])], rows)
+               [("label", "text")] + [(c, ISOG_TYPES[c]) for c in CENSUS_COLUMNS], rows)
     print("q=%s: %s classes in the quartic census, %s of them in the data" % (q, len(known), len(rows)))
     return len(rows)
 

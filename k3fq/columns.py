@@ -66,6 +66,7 @@ ISOG_COLUMNS = [
     ("realizable_ncverra", "smallint"),
     ("realizable_kummer", "smallint"),
     ("polarization_degrees", "integer[]"),
+    ("polarization_degrees_complete", "boolean"),
     ("num_lattices", "integer"),
     ("min_ample_degree", "integer"),
     ("min_quasi_ample_degree", "integer"),
@@ -79,12 +80,14 @@ FIELDS_COLUMNS = ["number_fields", "number_field_coeffs", "galois_groups"]
 TWIST_COLUMNS = ["geometric_class", "twist_count", "twists", "max_twist_degree"]
 BASECHANGE_COLUMNS = ["is_primitive", "primitive_models"]
 KUMMER_COLUMNS = ["kummer_av_classes", "realizable_kummer"]
+# The census stage overrides realizable_k3 and sets these (null for other classes)
+POLARIZATION_COLUMNS = ["polarization_degrees", "polarization_degrees_complete"]
+CENSUS_COLUMNS = ["realizable_k3"] + POLARIZATION_COLUMNS
 # Not computed by this repository yet (exported as null)
-FUTURE_COLUMNS = ["polarization_degrees", "num_lattices", "min_ample_degree",
-                  "min_quasi_ample_degree"]
+FUTURE_COLUMNS = ["num_lattices", "min_ample_degree", "min_quasi_ample_degree"]
 
 BASIC_COLUMNS = [c for c, _ in ISOG_COLUMNS
-                 if c not in TWIST_COLUMNS + BASECHANGE_COLUMNS + KUMMER_COLUMNS + FUTURE_COLUMNS]
+                 if c not in TWIST_COLUMNS + BASECHANGE_COLUMNS + KUMMER_COLUMNS + POLARIZATION_COLUMNS + FUTURE_COLUMNS]
 
 # Internal columns carried between stages but not exported
 GEOMETRIC_KEY = ("geometric_key", "text")

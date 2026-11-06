@@ -35,7 +35,7 @@ Key design points:
 
 Not implemented (exported as null):
 - LMFDB number-field labels (needs polredabs and an `nf_fields` lookup).
-- `polarization_degrees` (Taelman's theorem; positive results need the existence hypotheses stated in the schema).
+- `polarization_degrees` beyond the census, which gives degree 4 for its classes, with `polarization_degrees_complete` false.  Taelman's theorem would give complete lists for ordinary classes; results that need potential semistable reduction (p ≤ 3 in our data) are to be kept out of this column (decided 2026-11-06).
 - The whole `k3_fq_lattices` computation (Oscar, Brandhorst–Muller).
 - Positive realizability beyond the quartic census over F_2 (the `census` stage sets `realizable_k3 = 1` for its 52,755 classes; all of them pass our necessary conditions).  Otherwise only necessary conditions are used, giving −1.
 

@@ -44,6 +44,8 @@ def test_census_stage(tmp_path):
     for lab, r in rows.items():
         if lab in known:
             assert r["realizable_k3"] == 1
+            assert r["polarization_degrees"] == [4] and r["polarization_degrees_complete"] is False
         else:
             assert r["realizable_k3"] in (0, -1)
+            assert r["polarization_degrees"] is None and r["polarization_degrees_complete"] is None
     assert sum(1 for lab in rows if lab in known) == 5

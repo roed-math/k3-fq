@@ -47,7 +47,7 @@ The export file is in psycodict's `copy_from`/`reload` format: a header line wit
 | `twists` | geometric class (twist class), its size, and for classes of at most 50 members the minimal twist degrees with the common base change | `twists/q{q}.txt` |
 | `basechange` | primitive models: base changes of the classes over every subfield present in the data directory | `basechange/q{q}.txt` |
 | `kummer` | abelian surfaces over F_q (from `av_fq_isog`) whose wedge square has the same transcendental part | `kummer/q{q}.txt` |
-| `census` | `realizable_k3 = 1` for the classes known to contain a K3 surface: over F_2, the 52,755 zeta functions of smooth quartic surfaces from Kedlaya and Sutherland's census (`external/root-unitary/k3-quartic-f2/k3final.txt`).  It is an error for one of these to fail a necessary condition | `census/q{q}.txt` |
+| `census` | `realizable_k3 = 1` for the classes known to contain a K3 surface: over F_2, the 52,755 zeta functions of smooth quartic surfaces from Kedlaya and Sutherland's census (`external/root-unitary/k3-quartic-f2/k3final.txt`); these classes also get `polarization_degrees = [4]`, not known to be complete.  It is an error for one of these to fail a necessary condition | `census/q{q}.txt` |
 | `export` | joins everything; columns from stages that have not been run are null | `export/k3_fq_isog.q{q}.txt` |
 
 ### Where to run
@@ -100,7 +100,7 @@ According to the discussion notes, over F_2 there are just under 4 million polyn
 Not yet implemented, so exported as null:
 
 * LMFDB number field labels (`number_fields`).  This needs `polredabs`, which is slow for large degree.
-* `polarization_degrees` (Taelman's theorem for ordinary classes).
+* `polarization_degrees` beyond degree 4 for the quartic census (Taelman's theorem for ordinary classes); `polarization_degrees_complete` says whether a list is known to be complete.
 * The lattice table, and the lattice summary columns.
 * Realizability beyond the necessary conditions.
 
