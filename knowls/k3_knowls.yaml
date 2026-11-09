@@ -54,7 +54,7 @@
 - id: k3.verra_fourfold
   title: Verra fourfold
   content: |-
-    A **Verra fourfold** $Y$ is a double cover of $\mathbb{P}^2 \times \mathbb{P}^2$ branched along a smooth divisor of bidegree $(2, 2)$.  Its middle cohomology $H^4(Y)$ has rank $24$, with $h^{3,1} = h^{1,3} = 1$, and contains a {{ KNOWL('k3.motive', 'motive of K3 type') }} \cite{arxiv:1706.08955}.
+    A **Verra fourfold** $Y$ is a double cover of $\mathbb{P}^2 \times \mathbb{P}^2$ branched along a smooth divisor of bidegree $(2, 2)$.  Its middle cohomology $H^4(Y)$ has rank $24$, with $h^{3,1} = h^{1,3} = 1$, and its Tate twist $H^4(Y)(2)$ contains a {{ KNOWL('k3.motive', 'motive of K3 type') }} \cite{arxiv:1706.08955}.
 - id: k3.twisted_k3_surface
   title: Twisted K3 surface
   content: |-
