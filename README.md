@@ -26,6 +26,7 @@ Everything else runs under `sage -python` (Sage 10.x).  The `fields` stage uses 
 All stages take `--data DIR` (default `data/`) and `-j JOBS`.
 
     sage -python k3fq.py -j 14 enumerate 2                           # all of them: data/polys/q2_p.txt, q2_m.txt
+    sage -python k3fq.py -j 14 enumerate 2 --min-geometric-rank 0    # the same classes, grouped by transcendental part (faster later stages)
     sage -python k3fq.py -j 14 enumerate 7 --min-geometric-rank 10   # only geometric Picard rank >= 10
     sage -python k3fq.py -j 14 basic data/polys/q2_*.txt            # invariants, in chunks (resumable)
     sage -python k3fq.py -j 14 fields 2                             # Galois groups (Magma fallback), polredbest

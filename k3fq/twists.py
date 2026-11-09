@@ -96,31 +96,34 @@ def _base_change_prime(P, ell):
     return R([c // c0 for c in Pn])
 
 
+def _factors_key(transcendental_factors):
+    return tuple((tuple(int(c) for c in f), int(e)) for f, e in transcendental_factors)
+
+
 def _angles(transcendental_factors, prec=PREC):
     """
     The arguments (as fractions of a full turn, in [0,1)) of all roots of
     the transcendental part, with multiplicity.
     """
+    return list(_angles_cached(_factors_key(transcendental_factors), prec))
+
+
+# The angles only depend on the transcendental part, which is shared by the
+# members of a twist class with different cyclotomic parts.
+@lru_cache(maxsize=4096)
+def _angles_cached(factors, prec):
     RF = RealField(prec)
     CF = ComplexField(prec)
     twopi = 2 * RF(pi)
     ans = []
-    for f, e in transcendental_factors:
-        for z in pari(R(f)).polroots(precision=prec):
+    for f, e in factors:
+        for z in pari(R(list(f))).polroots(precision=prec):
             theta = CF(z).arg() / twopi
             ans.extend([theta - theta.floor()] * e)
-    return ans
+    return tuple(ans)
 
 
-def geometric_key(row):
-    """
-    A string determining the twist class of ``row`` (a dictionary with at
-    least q, geometric_picard_rank and transcendental_factors).
-    """
-    return _key(row, _angles(row["transcendental_factors"]))
-
-
-def _key(row, thetas):
+def _key_values(thetas):
     RF = RealField(PREC)
     vals = []
     scale = RF(10) ** KEY_DIGITS
@@ -131,8 +134,27 @@ def _key(row, thetas):
         if v == scale:
             v = 0
         vals.append(int(v))
-    vals.sort()
+    return tuple(sorted(vals))
+
+
+# The key of a class only depends on q, the geometric Picard rank and the
+# transcendental part; the last is cached, as it occurs in many classes.
+@lru_cache(maxsize=2 ** 18)
+def _cached_key_values(factors):
+    return _key_values(_angles_cached(factors, PREC))
+
+
+def geometric_key(row):
+    """
+    A string determining the twist class of ``row`` (a dictionary with at
+    least q, geometric_picard_rank and transcendental_factors).
+    """
+    vals = _cached_key_values(_factors_key(row["transcendental_factors"]))
     return "%s:%s:%s" % (row["q"], row["geometric_picard_rank"], ",".join(map(str, vals)))
+
+
+def _key(row, thetas):
+    return "%s:%s:%s" % (row["q"], row["geometric_picard_rank"], ",".join(map(str, _key_values(thetas))))
 
 
 def _all_angles(row):
@@ -316,31 +338,55 @@ def twist_data(rows):
     return out
 
 
+def subfields(q):
+    """
+    The cardinalities of the proper subfields of F_q.
+    """
+    p, r = ZZ(q).is_prime_power(get_data=True)
+    return [int(p ** (r // d)) for d in ZZ(r).divisors() if d > 1]
+
+
+def primitive_models(q, sources):
+    """
+    ``sources`` maps the cardinality q0 of a proper subfield of F_q to rows
+    (with label and poly) over F_{q0}.  Returns label -> sorted list of the
+    labels of the source classes whose base change to F_q is that class.
+    """
+    r = ZZ(q).is_prime_power(get_data=True)[1]
+    models = defaultdict(list)
+    for q0, rows0 in sources.items():
+        d = r // ZZ(q0).is_prime_power(get_data=True)[1]
+        for row0 in rows0:
+            models[poly_to_label(base_change(row0["poly"], d))].append(row0["label"])
+    return {lab: sorted(ms, key=label_sort_key) for lab, ms in models.items()}
+
+
+def primitivity(models, complete):
+    """
+    The BASECHANGE_COLUMNS of a class with the given primitive models, where
+    ``complete`` says whether every proper subfield has data.
+    """
+    if models:
+        return {"is_primitive": False, "primitive_models": models}
+    return {"is_primitive": True if complete else None, "primitive_models": None}
+
+
 def primitive_model_data(rows_by_q):
     """
-    ``rows_by_q`` maps q to the list of rows (with label and poly) over F_q.
-    Returns label -> {is_primitive, primitive_models} for every row, with
-    is_primitive None when some proper subfield has no data.
+    ``rows_by_q`` maps q to the list of rows (with label, poly and
+    geometric_picard_rank) over F_q.  Returns label -> {is_primitive,
+    primitive_models} for every row, with is_primitive None when some proper
+    subfield has no data.  (In memory; basechange_stage streams the same
+    computation.)
     """
+    minrho = {q: min(r["geometric_picard_rank"] for r in rows) for q, rows in rows_by_q.items() if rows}
     out = {}
     for q, rows in rows_by_q.items():
-        p, r = ZZ(q).is_prime_power(get_data=True)
-        models = defaultdict(list)
-        complete = True
-        for d in ZZ(r).divisors():
-            if d == 1:
-                continue
-            q0 = p ** (r // d)
-            if q0 not in rows_by_q:
-                complete = False
-                continue
-            for row0 in rows_by_q[q0]:
-                models[poly_to_label(base_change(row0["poly"], d))].append(row0["label"])
+        subs = subfields(q)
+        complete = all(q0 in rows_by_q for q0 in subs)
+        sources = {q0: [r for r in rows_by_q[q0] if r["geometric_picard_rank"] >= minrho[q]]
+                   for q0 in subs if q0 in rows_by_q}
+        models = primitive_models(q, sources)
         for row in rows:
-            ms = sorted(models.get(row["label"], []), key=label_sort_key)
-            if ms:
-                out[row["label"]] = {"is_primitive": False, "primitive_models": ms}
-            else:
-                out[row["label"]] = {"is_primitive": True if complete else None,
-                                     "primitive_models": None}
+            out[row["label"]] = primitivity(models.get(row["label"]), complete)
     return out

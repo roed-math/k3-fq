@@ -8,6 +8,7 @@ definitions of the columns computed here.
 """
 from collections import Counter
 from fractions import Fraction
+from functools import lru_cache
 from math import gcd
 
 from sage.all import ZZ, ComplexField, RealField, euler_phi, moebius, pari, pi
@@ -143,6 +144,76 @@ def numerical_rank(numbers, sprec):
     return len(numbers)
 
 
+# ----------------------------------------------------------------------
+# Invariants of the transcendental part
+#
+# A class is a product of a cyclotomic part and a transcendental part, and
+# each transcendental part occurs in many classes (once for each cyclotomic
+# part of the complementary degree).  The invariants below depend only on the
+# transcendental part, and are most of the work of the basic stage, so they
+# are cached by coefficient tuple.  The cached values are small.
+
+TRANS_CACHE = 2 ** 18
+
+
+@lru_cache(maxsize=TRANS_CACHE)
+def _factor_transcendental(scoeffs):
+    """
+    The factorization of the transcendental part with coefficients
+    ``scoeffs`` over a non-prime field, as a tuple of pairs (f, e) with f
+    primitive, irreducible and f(0) > 0, sorted by degree and coefficients.
+    """
+    ans = []
+    for f, e in R(list(scoeffs)).factor():
+        if f.degree() == 0:
+            continue
+        if f[0] < 0:
+            f = -f
+        ans.append((tuple(int(c) for c in f.list()), int(e)))
+    ans.sort(key=lambda fe: (len(fe[0]), fe[0]))
+    return tuple(ans)
+
+
+@lru_cache(maxsize=TRANS_CACHE)
+def _galois_label(fcoeffs):
+    return galois_label(R(list(fcoeffs)))
+
+
+def _upper_roots(fcoeffs, prec):
+    """
+    The roots in the upper half plane of the transcendental factor f.
+    """
+    roots = pari(R(list(fcoeffs))).polroots(precision=prec)
+    CC = ComplexField(prec)
+    up = [CC(z) for z in roots if CC(z).imag() > 0]
+    assert len(up) == (len(fcoeffs) - 1) // 2
+    return up
+
+
+@lru_cache(maxsize=TRANS_CACHE)
+def _factor_angles(fcoeffs):
+    """
+    The arguments, divided by pi, of the roots of f in the upper half plane.
+    """
+    RRpi = RealField(53)(pi)
+    return tuple(float(z.arg() / RRpi) for z in _upper_roots(fcoeffs, 64))
+
+
+@lru_cache(maxsize=TRANS_CACHE)
+def _numerical_angle_rank(factors):
+    """
+    The angle rank of a transcendental part with factorization ``factors``
+    (pairs (f, e)), computed numerically.
+    """
+    sprec = 25
+    prec = sprec ** 2
+    RF = RealField(prec)
+    angles = []
+    for f, e in factors:
+        angles.extend(z.arg() / RF(pi) for z in _upper_roots(f, prec))
+    return numerical_rank(angles + [RF(1)], sprec) - 1
+
+
 class K3Poly:
     """
     A K3-type polynomial.  ``coeffs`` is the coefficient list (constant term
@@ -198,14 +269,7 @@ class K3Poly:
             # cyclotomic by Kronecker's theorem.
             ans = [(S, 1)]
         else:
-            ans = []
-            for f, e in S.factor():
-                if f.degree() == 0:
-                    continue
-                if f[0] < 0:
-                    f = -f
-                ans.append((f, e))
-            ans.sort(key=lambda fe: (fe[0].degree(), fe[0].list()))
+            ans = [(R(list(f)), e) for f, e in _factor_transcendental(tuple(int(c) for c in S.list()))]
         self._tfactors = ans
         return ans
 
@@ -228,21 +292,6 @@ class K3Poly:
     # ------------------------------------------------------------------
     # Roots and angles
 
-    def _transcendental_roots(self, prec):
-        """
-        For each distinct irreducible transcendental factor, its complex
-        roots in the upper half plane at the given precision, with the
-        multiplicity of the factor.
-        """
-        ans = []
-        for f, e in self.transcendental_factors():
-            roots = pari(f).polroots(precision=prec)
-            CC = ComplexField(prec)
-            up = [CC(z) for z in roots if CC(z).imag() > 0]
-            assert len(up) == f.degree() // 2
-            ans.append((up, e))
-        return ans
-
     def angles(self):
         angles = []
         for m in self.cyclotomic_factors:
@@ -252,10 +301,9 @@ class K3Poly:
                 angles.append(1.0)
             else:
                 angles.extend(2.0 * j / m for j in range(1, (m + 1) // 2) if gcd(j, m) == 1)
-        RRpi = RealField(53)(pi)
-        for up, e in self._transcendental_roots(64):
-            for z in up:
-                angles.extend([float(z.arg() / RRpi)] * e)
+        for f, e in self.transcendental_factors():
+            for a in _factor_angles(tuple(int(c) for c in f.list())):
+                angles.extend([a] * e)
         return sorted(angles)
 
     def angle_rank(self, certified):
@@ -269,13 +317,7 @@ class K3Poly:
             return 0
         if certified and len(tf) == 1:
             return tf[0][0].degree() // 2
-        sprec = 25
-        prec = sprec ** 2
-        RF = RealField(prec)
-        angles = []
-        for up, e in self._transcendental_roots(prec):
-            angles.extend(z.arg() / RF(pi) for z in up)
-        return numerical_rank(angles + [RF(1)], sprec) - 1
+        return _numerical_angle_rank(tuple((tuple(int(c) for c in f.list()), int(e)) for f, e in tf))
 
     # ------------------------------------------------------------------
     # Artin-Tate
@@ -410,7 +452,7 @@ class K3Poly:
         gals = []
         certified = True
         for f, e in tf:
-            lab, full = galois_label(f)
+            lab, full = _galois_label(tuple(int(c) for c in f.list()))
             gals.append(lab)
             certified = certified and full
         D["galois_groups"] = gals

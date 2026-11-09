@@ -52,7 +52,21 @@ Not implemented (exported as null):
    - "Igusa–Makai" in the notes was read as Gushel–Mukai.
    - The Verra fourfold point count assumes the 22-dimensional piece contains one of the three classes pulled back from P²×P².
    - Both are flagged in the schema notes.
-6. **Performance at scale.**  The `basic` stage takes about 13 ms per polynomial.  The twists stage on full datasets is the likely bottleneck (it is pairwise within classes of at most 50).
+6. **Performance at scale (measured 2026-11-09 on mimir at load 60–90, so pessimistic).**  Cutoffs as in item 1: 13,351,780 classes.  CPU-hours by stage:
+
+   | stage | cost | total |
+   | --- | --- | --- |
+   | enumerate | F_2 degrees 18, 20, 22: 0.24, 2.0, 5.6 CPU-h (528,687, 1,485,591 and 3,992,467 polynomials, so F_2 has exactly 5,478,058 classes, 74,846 of them with ρ̄ = 0); q ≥ 3 minutes | ~8 |
+   | basic | 1.8 ms per class when its transcendental part has been seen before (cached), plus ~30 ms per distinct transcendental part (~154k over F_2) | ~5 |
+   | fields | `polredbest` and `polredabs` ≤ 0.05 s per factor even in degree 22 (discriminants have ≤ ~40 digits); Magma for the 30–40% of factors of degree 12, 16, 20 that the certificate misses (0 in degrees 18, 22), 0.2 s each, ~17k factors | ~3 |
+   | twists: keys | 0.12 ms per class (cached by transcendental part) | ~1 |
+   | twists: pairwise | only for ρ̄ ≤ 4 over F_2: every transcendental part pairs with its quadratic twist, so twist classes have 2 × C(ρ̄) members, which is ≤ 50 only for ρ̄ ≤ 4.  ~1 s per class for ρ̄ = 4 (441k classes; cyclotomic orders up to 12 force big base changes), 0.02 s for ρ̄ = 2, nothing above | ~125 |
+   | basechange, kummer, census | streamed; base change only for subfield classes of large enough rank | < 1 |
+   | export | 0.3 ms per row, ~1.5 KB per row | ~2, ~20 GB |
+
+   So ~145 CPU-h, dominated by the ρ̄ = 4 pairwise twists, which could be made much cheaper: members sharing a transcendental part differ only in their cyclotomic parts, so their minimal twist degrees can be found combinatorially.  Run `enumerate 2 --min-geometric-rank 0` rather than plain `enumerate 2`: it writes the classes grouped by transcendental part, so the caches in `basic` and `twists` hit almost every time.  The export holds the F_2 stage data in memory (several GB); 64 GB RAM and ~60 GB of disk are enough.  Magma (for the `fields` stage) may not be licensed on cloud VMs.
+
+   **Lattices** (pointless classes imported from Simon Brandhorst, E ≤ 6 computed) are the unknown: 1.9M classes with E ≤ 6 and about 55M candidate genera after two necessary conditions, while Brandhorst's pointless run averaged ~0.9 CPU-h per genus (100 CPU-years for ~10^6 genera).  Run a pilot with his code on a few hundred E ≤ 2 and E ≤ 6 classes before committing.
 
 ## Reviews already addressed
 

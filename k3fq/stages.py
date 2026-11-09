@@ -43,8 +43,9 @@ def basic_files(datadir, q):
 
 def iter_rows(datadir, q, columns=None):
     seen = set()
+    wanted = None if columns is None else list(dict.fromkeys(["label"] + list(columns)))
     for fname in basic_files(datadir, q):
-        for row in read_file(fname):
+        for row in read_file(fname, wanted):
             if row["label"] in seen:
                 continue
             seen.add(row["label"])
@@ -182,12 +183,26 @@ def twists_stage(q, datadir, jobs=8):
 # primitive models (needs the basic stage for all relevant q)
 
 def basechange_stage(datadir):
+    """
+    Primitive models.  Base change preserves the geometric Picard rank, so a
+    class over a subfield F_{q0} can only be a model of a class in the data
+    over F_q if its rank is at least the smallest rank over F_q; only those
+    are base changed.  (Since the cutoffs are nondecreasing in q, the data
+    over F_{q0} contains all of them.)  The classes over F_q are streamed.
+    """
     qs = available_qs(datadir)
-    rows_by_q = {q: list(iter_rows(datadir, q, ["label", "poly"])) for q in qs}
-    data = tw.primitive_model_data(rows_by_q)
+    minrho = {q: min(r["geometric_picard_rank"] for r in iter_rows(datadir, q, ["geometric_picard_rank"]))
+              for q in qs}
     os.makedirs(os.path.join(datadir, "basechange"), exist_ok=True)
     for q in qs:
-        rows = [dict(label=r["label"], **data[r["label"]]) for r in rows_by_q[q]]
+        subs = tw.subfields(q)
+        complete = all(q0 in qs for q0 in subs)
+        sources = {q0: [r for r in iter_rows(datadir, q0, ["label", "poly", "geometric_picard_rank"])
+                        if r["geometric_picard_rank"] >= minrho[q]]
+                   for q0 in subs if q0 in qs}
+        models = tw.primitive_models(q, sources)
+        rows = (dict(label=r["label"], **tw.primitivity(models.get(r["label"]), complete))
+                for r in iter_rows(datadir, q, ["label"]))
         write_file(os.path.join(datadir, "basechange", "q%s.txt" % q),
                    [("label", "text")] + [(c, ISOG_TYPES[c]) for c in BASECHANGE_COLUMNS], rows)
 

@@ -133,17 +133,23 @@ def write_file(filename, columns, rows):
     os.replace(tmp, filename)
 
 
-def read_file(filename):
+def read_file(filename, columns=None):
     """
-    Iterate over the rows of ``filename`` as dictionaries.
+    Iterate over the rows of ``filename`` as dictionaries.  If ``columns`` is
+    given, only those columns are decoded (much faster for wide files).
     """
     with open(filename) as F:
         cols = F.readline().rstrip("\n").split(SEP)
         types = F.readline().rstrip("\n").split(SEP)
         F.readline()
+        if columns is None:
+            wanted = list(enumerate(zip(cols, types)))
+        else:
+            index = {c: i for i, c in enumerate(cols)}
+            wanted = [(index[c], (c, types[index[c]])) for c in columns]
         for line in F:
             vals = line.rstrip("\n").split(SEP)
-            yield {c: decode(v, t) for c, t, v in zip(cols, types, vals)}
+            yield {c: decode(vals[i], t) for i, (c, t) in wanted}
 
 
 def read_header(filename):
