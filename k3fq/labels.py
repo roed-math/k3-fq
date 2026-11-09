@@ -376,6 +376,20 @@ def poly_to_label(coeffs):
     if q < 2 or coeffs[-1] not in (q, -q):
         raise ValueError("constant term must be q > 1 and leading coefficient +-q")
     orders, trans = split_cyclotomic(coeffs)
+    return parts_to_label(q, orders, trans)
+
+
+def parts_to_label(q, orders, trans):
+    """
+    The label of the class with cyclotomic orders ``orders`` (with
+    multiplicity) and transcendental part with coefficients ``trans``
+    (palindromic, constant term q), without multiplying them out.
+
+    >>> parts_to_label(2, [1] * 20, [2, 1, 2])
+    '2.20.a.o'
+    """
+    orders = sorted(orders)
+    trans = [int(c) for c in trans]
     rho = sum(euler_phi(m) for m in orders)
     d = DEGREE - rho
     if len(trans) != d + 1 or trans != trans[::-1] or trans[0] != q:

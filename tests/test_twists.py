@@ -47,3 +47,38 @@ def test_primitive_models():
         assert data[r2["label"]]["is_primitive"]
         assert r2["label"] in data[r4["label"]]["primitive_models"]
         assert data[r4["label"]]["is_primitive"] is False
+
+
+def _rho18_rows():
+    # transcendental parts of degree 4 over F_2, their quadratic twists, and a
+    # few cyclotomic parts of degree 18 with various orders
+    from k3fq.labels import cyclotomic_orders, num_cyclotomic_parts, cyclotomic_product, poly_mul
+    S = [[2, -1, 2, -1, 2], [2, 1, 2, 1, 2], [2, 2, 3, 2, 2], [2, -2, 3, -2, 2], [2, 0, 3, 0, 2]]
+    picks = [0, 1, 17, 300, num_cyclotomic_parts(18) - 1]
+    rows = []
+    for s in S:
+        for i in picks:
+            rows.append(K3Poly(poly_mul(cyclotomic_product(cyclotomic_orders(18, i)), s)).compute())
+    return rows
+
+
+def test_base_change_label():
+    from k3fq.labels import poly_to_label
+    from k3fq.twists import base_change_label
+    for row in _rho18_rows()[::3]:
+        for n in (1, 2, 3, 6, 12):
+            assert base_change_label(row, n) == poly_to_label(base_change(row["poly"], n))
+
+
+def test_minimal_twist_degrees_brute_force():
+    from k3fq.twists import minimal_twist_degrees, geometric_key
+    rows = _rho18_rows()
+    pairs = [(a, b) for i, a in enumerate(rows) for b in rows[i + 1:]
+             if geometric_key(a) == geometric_key(b)][:16]
+    assert pairs
+    for a, b in pairs:
+        found = minimal_twist_degrees(a, b)
+        bound = max(found) if found else 60
+        agree = [n for n in range(1, bound + 1) if base_change(a["poly"], n) == base_change(b["poly"], n)]
+        minimal = [n for i, n in enumerate(agree) if not any(n % m == 0 for m in agree[:i])]
+        assert [int(n) for n in found] == minimal

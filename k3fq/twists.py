@@ -26,7 +26,7 @@ from math import gcd
 from sage.all import ZZ, QQ, RealField, ComplexField, PolynomialRing, pari, pi, euler_phi, lcm as sage_lcm
 
 from .cyclotomic import R, T
-from .labels import poly_to_label, label_sort_key
+from .labels import poly_to_label, parts_to_label, label_sort_key
 from .invariants import power_sums
 
 M_TWIST = sage_lcm([m for m in range(1, 500) if euler_phi(m) <= 44])
@@ -157,14 +157,6 @@ def _key(row, thetas):
     return "%s:%s:%s" % (row["q"], row["geometric_picard_rank"], ",".join(map(str, _key_values(thetas))))
 
 
-def _all_angles(row):
-    """
-    The data used to compare base changes: the cyclotomic orders (as a
-    Counter) and the angles of the transcendental roots.
-    """
-    return Counter(row["cyclotomic_factors"]), _angles(row["transcendental_factors"])
-
-
 @lru_cache(maxsize=None)
 def _phi(m):
     return int(euler_phi(m))
@@ -239,61 +231,95 @@ def _minimal_elements(ns):
 BC_LABEL_BITS = 128
 
 
-def angle_data(row):
+@lru_cache(maxsize=None)
+def _cyclotomic_twist_degrees(oa, ob):
     """
-    The data needed for twist computations: the geometric key and the
-    output of ``_all_angles``.
+    The minimal n (for divisibility) such that the cyclotomic parts with
+    orders ``oa`` and ``ob`` (sorted tuples, with multiplicity) agree after
+    base change to degree n.  Exact; these divide the lcm of the orders.
     """
-    A = _all_angles(row)
-    return _key(row, A[1]), A
+    ca, cb = Counter(oa), Counter(ob)
+    LC = 1
+    for m in set(oa) | set(ob):
+        LC = sage_lcm(LC, m)
+    return tuple(_minimal_divisors(LC, lambda n: _cyclotomic_base_change(ca, n) == _cyclotomic_base_change(cb, n)))
 
 
-def minimal_twist_degrees(rowA, rowB, A=None, B=None):
+@lru_cache(maxsize=4096)
+def _base_change_transcendental(scoeffs, n):
     """
-    The minimal n (for divisibility) with P_n = P'_n.  ``A`` and ``B`` are
-    the outputs of ``_all_angles``.
+    The transcendental part with coefficients ``scoeffs`` after base change to
+    degree n (still a transcendental part, of the same degree).
+    """
+    return tuple(int(c) for c in base_change(list(scoeffs), n))
 
-    The n for which the cyclotomic parts agree, and those for which the
-    transcendental parts agree, are both closed under multiples.  So the
-    minimal n for both are minimal elements of lcms of the minimal ones.
-    Their minimal elements divide the lcm of the cyclotomic orders, and of the
-    orders of the ratios of transcendental roots, respectively.  Each n with
-    n * q.nbits() <= BC_LABEL_BITS is also checked by exact base change.
+
+@lru_cache(maxsize=4096)
+def _transcendental_twist_degrees(fa, fb, sa, sb, bits):
+    """
+    The minimal n (for divisibility) such that the transcendental parts with
+    factorizations ``fa``, ``fb`` and coefficients ``sa``, ``sb`` agree after
+    base change to degree n.  They are found numerically (they divide the lcm
+    of the orders of the ratios of roots that are roots of unity), and each
+    with n * bits <= BC_LABEL_BITS is checked by exact base change.
     """
     eps = RealField(PREC)(2) ** (-PREC // 2)
-    if A is None:
-        A = _all_angles(rowA)
-    if B is None:
-        B = _all_angles(rowB)
-    (ca, ta), (cb, tb) = A, B
-    LC = 1
-    for m in list(ca) + list(cb):
-        LC = sage_lcm(LC, m)
-    cyc = _minimal_divisors(LC, lambda n: _cyclotomic_base_change(ca, n) == _cyclotomic_base_change(cb, n))
-    trans = _minimal_divisors(_transcendental_lcm(ta, tb, eps),
+    ta, tb = _angles_cached(fa, PREC), _angles_cached(fb, PREC)
+    found = _minimal_divisors(_transcendental_lcm(ta, tb, eps),
                               lambda n: _transcendental_same_after(n, ta, tb, eps))
-    found = _minimal_elements(sage_lcm(c, t) for c in cyc for t in trans)
-    bits = ZZ(rowA["q"]).nbits()
     for n in found:
-        if n * bits <= BC_LABEL_BITS and base_change(rowA["poly"], n) != base_change(rowB["poly"], n):
-            raise RuntimeError("numerical twist check failed for %s, %s, n=%s"
-                               % (rowA["label"], rowB["label"], n))
-    return found
+        if n * bits <= BC_LABEL_BITS and _base_change_transcendental(sa, n) != _base_change_transcendental(sb, n):
+            raise RuntimeError("numerical twist check failed for the transcendental parts %s and %s, n=%s"
+                               % (list(sa), list(sb), n))
+    return tuple(found)
 
 
-def class_twists(members, angles):
+def minimal_twist_degrees(rowA, rowB):
     """
-    ``members``: rows in one twist class (at most MAX_TWISTS of them);
-    ``angles``: label -> output of ``_all_angles``.  Returns label -> list of
-    [label', bc_label, n], with bc_label None when n * q.nbits() > BC_LABEL_BITS.
+    The minimal n (for divisibility) with P_n = P'_n, for rows with q,
+    cyclotomic_factors, transcendental_factors and transcendental_poly.
+
+    P_n = P'_n exactly when the cyclotomic parts and the transcendental parts
+    agree after base change to degree n, and each of these two sets of n is
+    closed under multiples.  So the minimal n are the minimal elements of the
+    lcms of the minimal n for the two parts.  These only depend on the
+    cyclotomic parts and on the transcendental parts respectively, which are
+    shared by many pairs in a twist class, and are cached.
+    """
+    cyc = _cyclotomic_twist_degrees(tuple(sorted(rowA["cyclotomic_factors"])),
+                                    tuple(sorted(rowB["cyclotomic_factors"])))
+    trans = _transcendental_twist_degrees(_factors_key(rowA["transcendental_factors"]),
+                                          _factors_key(rowB["transcendental_factors"]),
+                                          tuple(int(c) for c in rowA["transcendental_poly"]),
+                                          tuple(int(c) for c in rowB["transcendental_poly"]),
+                                          ZZ(rowA["q"]).nbits())
+    return _minimal_elements(sage_lcm(c, t) for c in cyc for t in trans)
+
+
+def base_change_label(row, n):
+    """
+    The label of the base change of ``row`` to degree n, computed from the
+    base changes of its cyclotomic part (combinatorially) and of its
+    transcendental part (cached), rather than from the whole polynomial.
+    """
+    orders = _cyclotomic_base_change(Counter(row["cyclotomic_factors"]), n)
+    trans = _base_change_transcendental(tuple(int(c) for c in row["transcendental_poly"]), n)
+    return parts_to_label(int(row["q"]) ** n, [m for m, e in orders.items() for _ in range(e)], trans)
+
+
+def class_twists(members):
+    """
+    ``members``: rows in one twist class (at most MAX_TWISTS of them).
+    Returns label -> list of [label', bc_label, n], with bc_label None when
+    n * q.nbits() > BC_LABEL_BITS.
     """
     twists = {r["label"]: [] for r in members}
     bits = ZZ(members[0]["q"]).nbits()
     for i, A in enumerate(members):
         for B in members[i + 1:]:
-            for d in minimal_twist_degrees(A, B, angles[A["label"]], angles[B["label"]]):
+            for d in minimal_twist_degrees(A, B):
                 d = int(d)
-                bc = poly_to_label(base_change(A["poly"], d)) if d * bits <= BC_LABEL_BITS else None
+                bc = base_change_label(A, d) if d * bits <= BC_LABEL_BITS else None
                 twists[A["label"]].append([B["label"], bc, d])
                 twists[B["label"]].append([A["label"], bc, d])
     for lab in twists:
@@ -321,19 +347,17 @@ def twist_columns(members, twists=None):
 
 def twist_data(rows):
     """
-    Given all rows over one F_q (dictionaries with label, q, poly,
-    cyclotomic_factors, geometric_picard_rank, transcendental_factors),
-    return a dictionary label -> dict of TWIST_COLUMNS.  (In memory; the
-    twists stage does the same thing chunk by chunk.)
+    Given all rows over one F_q (dictionaries with label, q,
+    cyclotomic_factors, geometric_picard_rank, transcendental_factors and
+    transcendental_poly), return a dictionary label -> dict of TWIST_COLUMNS.
+    (In memory; the twists stage does the same thing chunk by chunk.)
     """
     classes = defaultdict(list)
-    angles = {}
     for row in rows:
-        key, angles[row["label"]] = angle_data(row)
-        classes[key].append(row)
+        classes[geometric_key(row)].append(row)
     out = {}
     for members in classes.values():
-        tw = class_twists(members, angles) if len(members) <= MAX_TWISTS else None
+        tw = class_twists(members) if len(members) <= MAX_TWISTS else None
         out.update(twist_columns(members, tw))
     return out
 

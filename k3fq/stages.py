@@ -120,7 +120,7 @@ def magma_galois_groups(polys, magma="magma"):
 # ----------------------------------------------------------------------
 # twists
 
-_TWIST_INPUT = ["label", "q", "poly", "cyclotomic_factors", "geometric_picard_rank",
+_TWIST_INPUT = ["label", "q", "cyclotomic_factors", "geometric_picard_rank", "transcendental_poly",
                 "transcendental_factors"]
 
 
@@ -136,8 +136,7 @@ def _keys_for_chunk(args):
 
 
 def _class_twists(members):
-    angles = {r["label"]: tw._all_angles(r) for r in members}
-    return tw.twist_columns(members, tw.class_twists(members, angles))
+    return tw.twist_columns(members, tw.class_twists(members))
 
 
 def twists_stage(q, datadir, jobs=8):
