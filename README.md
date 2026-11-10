@@ -16,7 +16,7 @@ The enumeration uses Kiran Kedlaya's [root-unitary](https://github.com/kedlaya/r
 ## Setup
 
     git clone --recursive <this repository>
-    make            # builds bin/weilpoly against the FLINT shipped with Sage
+    make            # builds bin/weilpoly against the FLINT shipped with Sage (FLINT >= 3.0)
     make test       # sage -python -m pytest tests
 
 Everything else runs under `sage -python` (Sage 10.x).  The pipeline also uses [GNU parallel](https://www.gnu.org/software/parallel/), Magma (for Galois groups that the cheap certificate cannot decide), and a local LMFDB checkout (for abelian surfaces in `av_fq_isog` and number fields in `nf_fields`).

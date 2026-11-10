@@ -6,9 +6,10 @@ FLINT_PREFIX ?= $(SAGE_LOCAL)
 CC ?= gcc
 CFLAGS ?= -O3
 
-bin/weilpoly: external/root-unitary/c-script/weilpoly.c external/root-unitary/power_sums.c external/root-unitary/power_sums.h
+# c/flint_compat.h supplies a function that root-unitary needs and FLINT < 3.1 lacks.
+bin/weilpoly: external/root-unitary/c-script/weilpoly.c external/root-unitary/power_sums.c external/root-unitary/power_sums.h c/flint_compat.h
 	mkdir -p bin
-	$(CC) $(CFLAGS) -fopenmp -I$(FLINT_PREFIX)/include -L$(FLINT_PREFIX)/lib \
+	$(CC) $(CFLAGS) -fopenmp -I$(FLINT_PREFIX)/include -include c/flint_compat.h -L$(FLINT_PREFIX)/lib \
 	    -Wl,-rpath,$(FLINT_PREFIX)/lib -o $@ $< -lflint -lgmp
 
 external/root-unitary/c-script/weilpoly.c:
