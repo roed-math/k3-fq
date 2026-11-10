@@ -19,22 +19,21 @@ The enumeration uses Kiran Kedlaya's [root-unitary](https://github.com/kedlaya/r
     make            # builds bin/weilpoly against the FLINT shipped with Sage
     make test       # sage -python -m pytest tests
 
-Everything else runs under `sage -python` (Sage 10.x).  The `fields` stage uses Magma for Galois groups that the cheap certificate cannot decide.  The `kummer` stage reads abelian surfaces from the public LMFDB mirror.
+Everything else runs under `sage -python` (Sage 10.x).  The pipeline also uses [GNU parallel](https://www.gnu.org/software/parallel/), Magma (for Galois groups that the cheap certificate cannot decide), and a local LMFDB checkout (for abelian surfaces in `av_fq_isog` and number fields in `nf_fields`).
 
 ## Running
 
-All stages take `--data DIR` (default `data/`) and `-j JOBS`.
+The pipeline is set up by a configuration file, [`k3fq.toml`](k3fq.toml) by default (another one can be given with `--config FILE`).  It sets the data directory, the number of simultaneous jobs, the programs, the LMFDB checkout, and the base fields: for each q, the smallest geometric Picard rank to enumerate and the expected number of classes.  Then
 
-    sage -python k3fq.py -j 14 enumerate 2                           # all of them: data/polys/q2_p.txt, q2_m.txt
-    sage -python k3fq.py -j 14 enumerate 2 --min-geometric-rank 0    # the same classes, grouped by transcendental part (faster later stages)
-    sage -python k3fq.py -j 14 enumerate 7 --min-geometric-rank 10   # only geometric Picard rank >= 10
-    sage -python k3fq.py -j 14 basic data/polys/q2_*.txt            # invariants, in chunks (resumable)
-    sage -python k3fq.py -j 14 fields 2                             # Galois groups (Magma fallback), polredbest
-    sage -python k3fq.py -j 14 twists 2                             # twist classes
-    sage -python k3fq.py basechange                                 # primitive models (all q present)
-    sage -python k3fq.py kummer 3                                   # Kummer candidates (needs network)
-    sage -python k3fq.py census 2                                   # classes containing a smooth quartic (F_2)
-    sage -python k3fq.py export 2                                   # data/export/k3_fq_isog.q2.txt
+    sage -python k3fq.py                       # run every unfinished stage
+    sage -python k3fq.py status                # which stages have finished
+    sage -python k3fq.py rerun twists 3        # redo a stage (here only for q = 3) and the stages that use it
+
+The result is `DATA/k3_fq_isog.txt`, for all the fields together; `DATA/export/k3_fq_isog.q{q}.txt` has each field separately.  Each finished stage leaves a marker in `DATA/done/`, so after an interruption the same command resumes.  The basic, fields and twists stages also keep their finished chunks, and `rerun` reuses those: to recompute the basic stage from scratch (after changing its code, say), also move `DATA/basic/q{q}` away.
+
+The parallel parts (the basic stage, the polynomial reductions and Magma calls of the fields stage, the twist keys and pairwise twists, and the exports) are run by GNU parallel.  Each task is a separate `sage -python k3fq.py --config FILE worker ...` process, and GNU parallel records it in `DATA/jobs/*.log`.  Without a configuration file (as in the tests) the same tasks run one after another in-process.
+
+The enumeration, basic, twists and export stages check their number of classes against the configuration and stop on a mismatch.  The default configuration has the planned cutoffs (all classes for q = 2; ρ̄ ≥ 16 for q = 3, ρ̄ ≥ 18 for q = 4, ρ̄ ≥ 20 for q = 5, 7, 8; 13,346,626 classes in all).  The cutoffs must be nondecreasing along subfields.
 
 The export file is in psycodict's `copy_from`/`reload` format: a header line with column names, a line of types, a blank line, then `|`-separated rows.
 
@@ -42,14 +41,15 @@ The export file is in psycodict's `copy_from`/`reload` format: a header line wit
 
 | stage | what it does | output |
 | --- | --- | --- |
-| `enumerate` | Sign +1: `weilpoly 22 1 q`.  Sign -1: `(1 - T^2)` times the output of `weilpoly 20 1 q`.  With `--min-geometric-rank R`, it multiplies the transcendental parts of degree `2k <= 22 - R` (output of `weilpoly 2k 1 q` with no cyclotomic factor) by all cyclotomic products of degree `22 - 2k`, as in Kedlaya–Sutherland | `polys/q{q}_*.txt` |
+| `enumerate` | multiplies the transcendental parts of degree `2k <= 22 - R` (output of `weilpoly 2k 1 q` with no cyclotomic factor) by all cyclotomic products of degree `22 - 2k`, as in Kedlaya–Sutherland, where R is the field's `min_geometric_rank`.  With R = 0 this lists every class, grouped by transcendental part (which the caches of later stages rely on) | `polys/q{q}_rho{R}.txt` |
 | `basic` | everything that depends only on `P`: label, real polynomial, angles, angle rank, Newton polygon (slopes, height, elevation), cyclotomic factors, Picard ranks over extensions, Artin–Tate values, the Elsenhans–Jahnel condition, transcendental factorization and (usually) its Galois group, point counts for the four variety types, count positivity/growth, and the realizability flags that follow from these necessary conditions | `basic/q{q}/*.txt` |
-| `fields` | Galois groups the certificate missed (Magma's `GaloisGroup`); `polredbest` for each transcendental factor | `fields/q{q}.txt` |
+| `fields` | Galois groups the certificate missed (Magma's `GaloisGroup`); `polredabs` for each transcendental factor (falling back to `polredbest` after `polredabs_timeout` seconds; or `polredbest` throughout, if configured), and the label of the field in the LMFDB's `nf_fields` | `fields/q{q}.txt` |
 | `twists` | geometric class (twist class), its size, and for classes of at most 50 members the minimal twist degrees with the common base change | `twists/q{q}.txt` |
-| `basechange` | primitive models: base changes of the classes over every subfield present in the data directory | `basechange/q{q}.txt` |
 | `kummer` | abelian surfaces over F_q (from `av_fq_isog`) whose wedge square has the same transcendental part | `kummer/q{q}.txt` |
-| `census` | `realizable_k3 = 1` for the classes known to contain a K3 surface: over F_2, the 52,755 zeta functions of smooth quartic surfaces from Kedlaya and Sutherland's census (`external/root-unitary/k3-quartic-f2/k3final.txt`); these classes also get `polarization_degrees = [4]`, not known to be complete.  It is an error for one of these to fail a necessary condition | `census/q{q}.txt` |
-| `export` | joins everything; columns from stages that have not been run are null | `export/k3_fq_isog.q{q}.txt` |
+| `census` | (q = 2 only) `realizable_k3 = 1` for the classes known to contain a K3 surface: the 52,755 zeta functions of smooth quartic surfaces over F_2 from Kedlaya and Sutherland's census (`external/root-unitary/k3-quartic-f2/k3final.txt`); these classes also get `polarization_degrees = [4]`, not known to be complete.  It is an error for one of these to fail a necessary condition | `census/q2.txt` |
+| `basechange` | primitive models: base changes of the classes over every subfield in the configuration | `basechange/q{q}.txt` |
+| `export` | joins everything | `export/k3_fq_isog.q{q}.txt` |
+| `combine` | concatenates the exports | `k3_fq_isog.txt` |
 
 ### Where to run
 
@@ -63,7 +63,7 @@ Generate the real data on lovelace.  mimir is shared and often heavily loaded, s
 
 Here C(e) counts products of cyclotomic polynomials of degree e, and T(q, 2k) counts transcendental parts.  T is recovered from the counts printed by Kedlaya's driver (see `k3fq/counts.py`).  For example:
 
-    sage -python k3fq.py -j 4 counts 3-64 --max-degree 6
+    sage -python k3fq.py counts 3-64 --max-degree 6
 
 `scripts/lovelace_counts.sh` also does the full count over F_2.
 

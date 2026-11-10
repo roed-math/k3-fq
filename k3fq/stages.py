@@ -5,7 +5,9 @@ live under the data directory:
     polys/q{q}_*.txt          output of ``enumerate`` (one polynomial per line)
     basic/q{q}/*.txt          output of ``basic`` (BASIC_COLUMNS)
     fields/q{q}.txt           Galois groups and number fields, keyed by factor
+    fields/q{q}/*             inputs and outputs of the Magma and polred jobs
     twists/q{q}/keys.*.txt    geometric keys (intermediate)
+    twists/q{q}/pairs.*       inputs and outputs of the pairwise twist jobs
     twists/q{q}.txt           TWIST_COLUMNS
     basechange/q{q}.txt       BASECHANGE_COLUMNS
     kummer/q{q}.txt           KUMMER_COLUMNS
@@ -14,13 +16,10 @@ live under the data directory:
 """
 import glob
 import hashlib
-import json
 import os
 import subprocess
-import tempfile
 import time
 from collections import defaultdict
-from multiprocessing import Pool
 
 from sage.all import ZZ, pari
 
@@ -28,6 +27,8 @@ from .columns import (ISOG_COLUMNS, ISOG_TYPES, TWIST_COLUMNS, BASECHANGE_COLUMN
                       KUMMER_COLUMNS, CENSUS_COLUMNS)
 from .cyclotomic import R, split_cyclotomic
 from .labels import label_sort_key, poly_to_label
+from .lmfdb_access import lmfdb_db
+from .parallel import Runner, worker
 from .pgformat import read_file, write_file
 from . import twists as tw
 
@@ -59,15 +60,103 @@ def available_qs(datadir):
 
 
 # ----------------------------------------------------------------------
-# fields: Galois groups that the certificate missed (Magma) and reduced
-# defining polynomials (PARI polredbest)
+# fields: Galois groups that the certificate missed (Magma), reduced
+# defining polynomials (polredabs, or polredbest), and LMFDB labels
 
-def _polredbest(f):
-    g = pari(R(f)).polredbest()
-    return [int(c) for c in pari.Vecrev(g)]
+FACTOR_CHUNK = 2000
 
 
-def fields_stage(q, datadir, jobs=8, magma="magma"):
+def _write_lines_atomic(fname, lines):
+    tmp = fname + ".tmp"
+    with open(tmp, "w") as F:
+        F.writelines(line + "\n" for line in lines)
+    os.replace(tmp, fname)
+
+
+def _factor_chunks(workdir, kind, factors):
+    """
+    Write ``factors`` in chunks to ``workdir/{kind}.{hash}.in`` and return
+    the (input, output) pairs.  The names depend on the contents, so an output
+    from an earlier run is only reused for the same input.
+    """
+    pairs = []
+    for i in range(0, len(factors), FACTOR_CHUNK):
+        lines = [",".join(map(str, f)) for f in factors[i:i + FACTOR_CHUNK]]
+        h = hashlib.sha1("\n".join(lines).encode()).hexdigest()[:16]
+        infile = os.path.join(workdir, "%s.%s.in" % (kind, h))
+        if not os.path.exists(infile):
+            _write_lines_atomic(infile, lines)
+        pairs.append((infile, infile[:-3] + ".out"))
+    return pairs
+
+
+def reduced_polynomial(f, method="polredabs", timeout=600):
+    """
+    A reduced defining polynomial of Q[T]/(f) (coefficients, constant term
+    first), and the method that produced it: polredabs unless it takes longer
+    than ``timeout`` seconds (0 for no limit), and then polredbest.
+    """
+    g = pari(R(list(f)))
+    if method == "polredabs":
+        from sage.all import alarm, cancel_alarm
+        from cysignals.signals import AlarmInterrupt
+        try:
+            if timeout:
+                alarm(timeout)
+            h = g.polredabs()
+            return [int(c) for c in pari.Vecrev(h)], "polredabs"
+        except AlarmInterrupt:
+            pass
+        finally:
+            cancel_alarm()
+    h = g.polredbest()
+    return [int(c) for c in pari.Vecrev(h)], "polredbest"
+
+
+@worker("polred")
+def polred_chunk(cfg, infile, outfile):
+    method = cfg.polred if cfg is not None else "polredabs"
+    timeout = cfg.polredabs_timeout if cfg is not None else 600
+    t0 = time.time()
+    lines = []
+    with open(infile) as F:
+        for line in F:
+            f = [int(c) for c in line.split(",")]
+            g, used = reduced_polynomial(f, method, timeout)
+            lines.append("%s\t%s\t%s" % (line.strip(), ",".join(map(str, g)), used))
+    _write_lines_atomic(outfile, lines)
+    print("%s: %s polynomials in %.1fs" % (os.path.basename(outfile), len(lines), time.time() - t0), flush=True)
+
+
+@worker("magma")
+def magma_chunk(cfg, infile, outfile):
+    """
+    Transitive labels of the Galois groups of the polynomials in ``infile``,
+    computed by magma/galois_groups.m.
+    """
+    script = os.path.join(ROOT, "magma", "galois_groups.m")
+    magma = cfg.magma if cfg is not None else "magma"
+    t0 = time.time()
+    tmp = outfile + ".tmp"
+    subprocess.run([magma, "-b", "infile:=%s" % infile, "outfile:=%s" % tmp, script],
+                   check=True, stdout=subprocess.DEVNULL)
+    os.replace(tmp, outfile)
+    print("%s: Magma in %.1fs" % (os.path.basename(outfile), time.time() - t0), flush=True)
+
+
+def _read_pairs(pairs, parse):
+    ans = {}
+    for infile, outfile in pairs:
+        with open(outfile) as F:
+            for line in F:
+                k, v = parse(line)
+                ans[k] = v
+    return ans
+
+
+def fields_stage(q, datadir, runner=None):
+    runner = runner or Runner()
+    cfg = runner.cfg
     factors = set()
     missing = set()
     for row in iter_rows(datadir, q, ["transcendental_factors", "galois_groups"]):
@@ -76,45 +165,51 @@ def fields_stage(q, datadir, jobs=8, magma="magma"):
             if g is None:
                 missing.add(tuple(f))
     print("q=%s: %s distinct transcendental factors, %s without a Galois group"
-          % (q, len(factors), len(missing)))
-    galois = {}
-    if missing:
-        galois = magma_galois_groups(sorted(missing), magma)
+          % (q, len(factors), len(missing)), flush=True)
+    workdir = os.path.join(datadir, "fields", "q%s" % q)
+    os.makedirs(workdir, exist_ok=True)
+
+    pairs = _factor_chunks(workdir, "magma", sorted(missing))
+    runner.run("magma", [p for p in pairs if not os.path.exists(p[1])],
+               jobs=cfg.magma_jobs if cfg is not None else 1)
+
+    def parse_magma(line):
+        coeffs, label = line.split()
+        return tuple(int(c) for c in coeffs.split(",")), label
+    galois = _read_pairs(pairs, parse_magma)
+    assert set(galois) == missing
+
     factors = sorted(factors)
-    with Pool(jobs) as pool:
-        reduced = pool.map(_polredbest, factors, chunksize=200)
+    pairs = _factor_chunks(workdir, "polred", factors)
+    runner.run("polred", [p for p in pairs if not os.path.exists(p[1])])
+
+    def parse_polred(line):
+        f, g, used = line.rstrip("\n").split("\t")
+        return tuple(int(c) for c in f.split(",")), ([int(c) for c in g.split(",")], used)
+    reduced = _read_pairs(pairs, parse_polred)
+    assert set(reduced) == set(factors)
+    print("q=%s: %s reduced with polredabs, %s with polredbest" % (
+        q, sum(1 for g, u in reduced.values() if u == "polredabs"),
+        sum(1 for g, u in reduced.values() if u == "polredbest")), flush=True)
+
+    labels = {}
+    if cfg is not None and cfg.lmfdb_labels:
+        db = lmfdb_db(cfg)
+        t0 = time.time()
+        for f in factors:
+            g, used = reduced[f]
+            if used == "polredabs":
+                lab = db.nf_fields.lucky({"coeffs": g}, "label")
+                if lab:
+                    labels[f] = lab
+        print("q=%s: %s fields found in the LMFDB (%.1fs)" % (q, len(labels), time.time() - t0), flush=True)
+
     out = os.path.join(datadir, "fields", "q%s.txt" % q)
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    rows = [{"factor": list(f), "galois_group": galois.get(f), "nf_label": None,
-             "nf_coeffs": g} for f, g in zip(factors, reduced)]
+    rows = [{"factor": list(f), "galois_group": galois.get(f), "nf_label": labels.get(f),
+             "nf_coeffs": reduced[f][0]} for f in factors]
     write_file(out, [("factor", "jsonb"), ("galois_group", "text"), ("nf_label", "text"),
                      ("nf_coeffs", "jsonb")], rows)
     return len(rows)
-
-
-def magma_galois_groups(polys, magma="magma"):
-    """
-    Transitive labels of the Galois groups of ``polys`` (coefficient tuples),
-    computed by magma/galois_groups.m.
-    """
-    script = os.path.join(ROOT, "magma", "galois_groups.m")
-    with tempfile.TemporaryDirectory() as tmp:
-        infile = os.path.join(tmp, "in.txt")
-        outfile = os.path.join(tmp, "out.txt")
-        with open(infile, "w") as F:
-            for f in polys:
-                F.write(",".join(map(str, f)) + "\n")
-        t0 = time.time()
-        subprocess.run([magma, "-b", "infile:=%s" % infile, "outfile:=%s" % outfile, script],
-                       check=True, stdout=subprocess.DEVNULL)
-        print("Magma: %s Galois groups in %.1fs" % (len(polys), time.time() - t0))
-        ans = {}
-        with open(outfile) as F:
-            for line in F:
-                coeffs, label = line.split()
-                ans[tuple(int(c) for c in coeffs.split(","))] = label
-    assert len(ans) == len(polys)
-    return ans
 
 
 # ----------------------------------------------------------------------
@@ -122,40 +217,50 @@ def magma_galois_groups(polys, magma="magma"):
 
 _TWIST_INPUT = ["label", "q", "cyclotomic_factors", "geometric_picard_rank", "transcendental_poly",
                 "transcendental_factors"]
+PAIR_BATCH = 500   # twist classes per pairwise job
 
 
-def _keys_for_chunk(args):
-    fname, outfile = args
+def _newer(output, inputs):
+    return os.path.exists(output) and all(os.path.getmtime(output) >= os.path.getmtime(f) for f in inputs)
+
+
+@worker("twistkeys")
+def twist_keys_chunk(cfg, basicfile, outfile):
     rows = []
-    for row in read_file(fname):
-        key = tw.geometric_key(row)
+    for row in read_file(basicfile, ["label", "q", "geometric_picard_rank", "transcendental_factors"]):
         rows.append({"label": row["label"],
-                     "key": hashlib.sha1(key.encode()).hexdigest()})
+                     "key": hashlib.sha1(tw.geometric_key(row).encode()).hexdigest()})
     write_file(outfile, [("label", "text"), ("key", "text")], rows)
-    return len(rows)
 
 
-def _class_twists(members):
-    return tw.twist_columns(members, tw.class_twists(members))
+@worker("twistpairs")
+def twist_pairs_batch(cfg, infile, outfile):
+    classes = defaultdict(list)
+    for row in read_file(infile):
+        classes[row.pop("class")].append(row)
+    rows = []
+    for members in classes.values():
+        cols = tw.twist_columns(members, tw.class_twists(members))
+        rows.extend(dict(label=lab, **c) for lab, c in cols.items())
+    write_file(outfile, [("label", "text")] + [(c, ISOG_TYPES[c]) for c in TWIST_COLUMNS], rows)
 
 
-def twists_stage(q, datadir, jobs=8):
+def twists_stage(q, datadir, runner=None):
+    runner = runner or Runner()
     keydir = os.path.join(datadir, "twists", "q%s" % q)
     os.makedirs(keydir, exist_ok=True)
+    t0 = time.time()
     tasks = []
     for fname in basic_files(datadir, q):
         outfile = os.path.join(keydir, "keys." + os.path.basename(fname))
-        if not os.path.exists(outfile):
+        if not _newer(outfile, [fname]):
             tasks.append((fname, outfile))
-    t0 = time.time()
-    with Pool(jobs) as pool:
-        for n in pool.imap_unordered(_keys_for_chunk, tasks):
-            pass
-    print("q=%s: geometric keys computed (%.1fs)" % (q, time.time() - t0))
+    runner.run("twistkeys", tasks)
+    print("q=%s: geometric keys computed (%.1fs)" % (q, time.time() - t0), flush=True)
     # sets: overlapping enumeration files (e.g. full and elevated rank) share labels
     classes = defaultdict(set)
-    for fname in sorted(glob.glob(os.path.join(keydir, "keys.*.txt"))):
-        for row in read_file(fname):
+    for fname in basic_files(datadir, q):
+        for row in read_file(os.path.join(keydir, "keys." + os.path.basename(fname))):
             classes[row["key"]].add(row["label"])
     small = {lab for labs in classes.values() if 1 < len(labs) <= tw.MAX_TWISTS for lab in labs}
     data = {r["label"]: r for r in iter_rows(datadir, q, _TWIST_INPUT) if r["label"] in small}
@@ -164,32 +269,42 @@ def twists_stage(q, datadir, jobs=8):
     for labs in classes.values():
         labs = sorted(labs, key=label_sort_key)
         if 1 < len(labs) <= tw.MAX_TWISTS:
-            work.append([data[lab] for lab in labs])
+            work.append(labs)
         else:
             out.update(tw.twist_columns([{"label": lab} for lab in labs],
                                         None if len(labs) > 1 else {labs[0]: []}))
-    with Pool(jobs) as pool:
-        for res in pool.imap_unordered(_class_twists, work):
-            out.update(res)
-    rows = [dict(label=lab, **cols) for lab, cols in sorted(out.items(), key=lambda kv: label_sort_key(kv[0]))]
+    for old in glob.glob(os.path.join(keydir, "pairs.*")):
+        os.remove(old)
+    cols = [("class", "integer")] + [(c, ISOG_TYPES[c]) for c in _TWIST_INPUT]
+    tasks = []
+    for b in range(0, len(work), PAIR_BATCH):
+        infile = os.path.join(keydir, "pairs.%05d.in" % (b // PAIR_BATCH))
+        rows = [dict(data[lab], **{"class": b + i}) for i, labs in enumerate(work[b:b + PAIR_BATCH]) for lab in labs]
+        write_file(infile, cols, rows)
+        tasks.append((infile, infile[:-3] + ".out"))
+    runner.run("twistpairs", tasks)
+    for infile, outfile in tasks:
+        out.update({row.pop("label"): row for row in read_file(outfile)})
+    rows = [dict(label=lab, **c) for lab, c in sorted(out.items(), key=lambda kv: label_sort_key(kv[0]))]
     write_file(os.path.join(datadir, "twists", "q%s.txt" % q),
                [("label", "text")] + [(c, ISOG_TYPES[c]) for c in TWIST_COLUMNS], rows)
-    print("q=%s: %s twist classes (%.1fs)" % (q, len(classes), time.time() - t0))
+    print("q=%s: %s twist classes, %s with pairwise data (%.1fs)" % (q, len(classes), len(work), time.time() - t0), flush=True)
     return len(rows)
 
 
 # ----------------------------------------------------------------------
 # primitive models (needs the basic stage for all relevant q)
 
-def basechange_stage(datadir):
+def basechange_stage(datadir, qs=None):
     """
     Primitive models.  Base change preserves the geometric Picard rank, so a
     class over a subfield F_{q0} can only be a model of a class in the data
     over F_q if its rank is at least the smallest rank over F_q; only those
     are base changed.  (Since the cutoffs are nondecreasing in q, the data
     over F_{q0} contains all of them.)  The classes over F_q are streamed.
+    ``qs`` defaults to every q in the data directory.
     """
-    qs = available_qs(datadir)
+    qs = sorted(qs) if qs else available_qs(datadir)
     minrho = {q: min(r["geometric_picard_rank"] for r in iter_rows(datadir, q, ["geometric_picard_rank"]))
               for q in qs}
     os.makedirs(os.path.join(datadir, "basechange"), exist_ok=True)
@@ -220,33 +335,34 @@ def wedge_square_transcendental(q, a1, a2):
     return split_cyclotomic(W)[2].list()
 
 
-def lmfdb_abelian_surfaces(q):
+def lmfdb_abelian_surfaces(q, cfg):
     """
     (label, a1, a2) for the isogeny classes of abelian surfaces over F_q in
-    the LMFDB (read from the public devmirror).
+    the LMFDB (through the LMFDB checkout in the configuration).
     """
-    import psycopg
-    conn = psycopg.connect(host="devmirror.lmfdb.xyz", user="lmfdb", password="lmfdb",
-                           dbname="lmfdb")
-    with conn.cursor() as cur:
-        cur.execute("SELECT label, poly FROM av_fq_isog WHERE g = 2 AND q = %s", (q,))
-        ans = [(lab, int(poly[1]), int(poly[2])) for lab, poly in cur.fetchall()]
-    conn.close()
-    return ans
+    db = lmfdb_db(cfg)
+    return [(r["label"], int(r["poly"][1]), int(r["poly"][2]))
+            for r in db.av_fq_isog.search({"g": 2, "q": q}, ["label", "poly"])]
 
 
-def kummer_stage(q, datadir):
+def kummer_stage(q, datadir, cfg=None):
     """
     kummer_av_classes: abelian surfaces whose wedge square has the same
     transcendental part.  realizable_kummer is -1 when there are none
     (e.g. whenever the geometric Picard rank is below 18) or when the class
     fails the necessary conditions for K3 surfaces (realizable_k3 = -1),
     and 0 otherwise.
-    Left null in characteristic 2 and when the LMFDB has no abelian surfaces
-    over F_q.
+    Left null in characteristic 2, when the LMFDB has no abelian surfaces
+    over F_q, and when no LMFDB checkout is configured.
     """
     p = ZZ(q).prime_factors()[0]
-    avs = lmfdb_abelian_surfaces(q) if p != 2 else []
+    if p == 2:
+        avs = []
+    elif cfg is None or not cfg.lmfdb_path:
+        print("q=%s: no LMFDB configured; Kummer columns will be null" % q)
+        avs = []
+    else:
+        avs = lmfdb_abelian_surfaces(q, cfg)
     lookup = defaultdict(list)
     for lab, a1, a2 in avs:
         lookup[tuple(wedge_square_transcendental(q, a1, a2))].append(lab)
@@ -334,10 +450,12 @@ def _load_by_label(fname):
 
 
 def export_stage(q, datadir):
-    fields = {}
+    fields = None
     fname = os.path.join(datadir, "fields", "q%s.txt" % q)
     if os.path.exists(fname):
         fields = {tuple(r["factor"]): r for r in read_file(fname)}
+    else:
+        print("q=%s: no fields data; the number field columns will be null" % q)
     extra = {}
     for stage in ("twists", "basechange", "kummer"):
         data = _load_by_label(os.path.join(datadir, stage, "q%s.txt" % q))
@@ -357,7 +475,7 @@ def export_stage(q, datadir):
     def rows():
         for row in iter_rows(datadir, q):
             facs = [tuple(f) for f, e in row["transcendental_factors"]]
-            if fields:
+            if fields is not None:
                 row["galois_groups"] = [g if g is not None else fields[f]["galois_group"]
                                         for f, g in zip(facs, row["galois_groups"])]
                 row["number_field_coeffs"] = [fields[f]["nf_coeffs"] for f in facs]
@@ -370,3 +488,8 @@ def export_stage(q, datadir):
     write_file(out, ISOG_COLUMNS, rows())
     print("wrote %s" % out)
     return out
+
+
+@worker("export")
+def export_worker(cfg, q, datadir):
+    export_stage(int(q), datadir)

@@ -1,0 +1,57 @@
+# Configuration of the k3_fq_isog pipeline: `sage -python k3fq.py` runs every
+# unfinished stage with these settings (see README.md and k3fq/config.py).
+
+data = "/scratch/k3"     # all intermediate files, and the upload file k3_fq_isog.txt
+jobs = 0                 # simultaneous GNU parallel jobs; 0 means one per core
+chunk_size = 20000       # classes per job in the basic stage
+export_jobs = 1          # simultaneous exports (each holds a field's data in memory)
+
+[programs]
+parallel = "parallel"    # GNU parallel
+sage = "sage"            # workers run as `sage -python k3fq.py --config ... worker ...`
+magma = "magma"
+magma_jobs = 1           # simultaneous Magma processes (licences)
+
+[number_fields]
+polred = "polredabs"     # or "polredbest"
+polredabs_timeout = 600  # seconds per polynomial, then polredbest is used instead
+lmfdb_labels = true      # look up the polredabs polynomials in the LMFDB's nf_fields
+
+[lmfdb]
+path = "~roed/lmfdb"     # LMFDB checkout, whose config.ini connects to the database
+
+[census]
+quartics_f2 = "external/root-unitary/k3-quartic-f2/k3final.txt"
+
+# The fields, with the smallest geometric Picard rank enumerated (rank 0 means
+# all classes) and the expected number of classes, which the enumeration,
+# basic, twists and export stages check.
+[[field]]
+q = 2
+min_geometric_rank = 0
+classes = 5478058
+
+[[field]]
+q = 3
+min_geometric_rank = 16
+classes = 3413708
+
+[[field]]
+q = 4
+min_geometric_rank = 18
+classes = 2197844
+
+[[field]]
+q = 5
+min_geometric_rank = 20
+classes = 548792
+
+[[field]]
+q = 7
+min_geometric_rank = 20
+classes = 793048
+
+[[field]]
+q = 8
+min_geometric_rank = 20
+classes = 915176

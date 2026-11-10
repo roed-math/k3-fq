@@ -37,7 +37,7 @@ def test_census_stage(tmp_path):
         for c in polys + others:
             F.write(" ".join(map(str, c)) + "\n")
     datadir = str(tmp_path / "data")
-    basic_stage(str(polyfile), datadir, jobs=1)
+    basic_stage(str(polyfile), datadir)
     assert census_stage(2, datadir, census_file=census) == 5
     rows = {r["label"]: r for r in read_file(export_stage(2, datadir))}
     known = quartic_census_labels(census)

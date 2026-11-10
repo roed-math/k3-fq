@@ -22,19 +22,18 @@ This is a new LMFDB section, "Motives of K3 type" over F_q.  Each row is a degre
 
 ## Pipeline (compute repo)
 
-The stages are `enumerate`, `basic`, `fields`, `twists`, `basechange`, `kummer`, `census`, `export` and `counts`; run them as `sage -python k3fq.py ...`.  The README has the details.  Tests: `make test` (85 pass; a fresh `git clone --recursive` passes too).
+`sage -python k3fq.py` runs the whole pipeline (`enumerate`, `basic`, `fields`, `twists`, `kummer`, `census`, `basechange`, `export`, `combine`) as set up by the configuration file `k3fq.toml`: data directory, jobs, programs, LMFDB checkout, and per field q the rank cutoff and expected class count.  Finished stages leave markers in `DATA/done/`, so rerunning the command resumes; `status` and `rerun STAGE [Q...]` manage them.  Parallel work goes through GNU parallel, one `sage -python k3fq.py --config FILE worker NAME ARGS` process per task (`k3fq/parallel.py`).  `counts` is separate.  The README has the details.  Tests: `make test` (93 pass; a fresh `git clone --recursive` passes too).
 
 Key design points:
 - Labels are `q.ρ.c.t` (`k3fq/labels.py`): the geometric Picard rank, the index `c` of the cyclotomic part among those of degree ρ̄, and the coefficients of the transcendental part in balanced base 26 (`n` = 0), all padded to one width and concatenated.  They replaced `q.s.c1_..._c11` on 2026-11-05, because large cyclotomic parts made those 25–58 characters long (median 32 in the sample; the new median is 11).  The geometric class representative of a complete twist class always has `c = a`.
 - Sign −1 polynomials are (1 − T²) times the sign +1 polynomials of degree 20.
-- `--min-geometric-rank R` multiplies transcendental parts of degree ≤ 22 − R by every cyclotomic product of the complementary degree.
+- The enumeration multiplies transcendental parts of degree ≤ 22 − R by every cyclotomic product of the complementary degree (R = `min_geometric_rank`; R = 0 for all of F_2).
 - Galois groups are certified as C2 ≀ Gal(h) via Frobenius cycle types, with PARI's `polgalois` for the real polynomial h; Magma is the fallback.
 - Twist classes are found by hashing the multiset {Mθ} with M = lcm{m : φ(m) ≤ 44}.  Base change uses power sums.
-- Kummer candidates come from `av_fq_isog` on the public devmirror.
+- Kummer candidates come from `av_fq_isog`, and number-field labels from `nf_fields` (looked up by the `polredabs` polynomial), both through the LMFDB checkout in the configuration (`~roed/lmfdb` on lovelace, which connects locally).
 - `counts` counts classes per geometric Picard rank from the driver's totals, without listing them.  This uses N(q, ρ̄ ≥ R) = Σ T(q,2k)·C(22−2k), with C(22) = 60,280.
 
 Not implemented (exported as null):
-- LMFDB number-field labels (needs polredabs and an `nf_fields` lookup).
 - `polarization_degrees` beyond the census, which gives degree 4 for its classes, with `polarization_degrees_complete` false.  Taelman's theorem would give complete lists for ordinary classes; results that need potential semistable reduction (p ≤ 3 in our data) are to be kept out of this column (decided 2026-11-06).
 - The whole `k3_fq_lattices` computation (Oscar, Brandhorst–Muller).
 - Positive realizability beyond the quartic census over F_2 (the `census` stage sets `realizable_k3 = 1` for its 52,755 classes; all of them pass our necessary conditions).  Otherwise only necessary conditions are used, giving −1.
@@ -42,7 +41,7 @@ Not implemented (exported as null):
 ## Open decisions and next steps
 
 1. **Cutoffs (decided 2026-11-05).**  All classes for q = 2; geometric Picard rank ρ̄ ≥ 16 for q = 3, ≥ 18 for q = 4, and ≥ 20 for q = 5, 7, 8 (recorded in `rcs.cande.k3.fq`).  The q ≥ 3 part is 7,868,568 rows (about 1.44 times F_2), so `k3_fq_isog` has about 13.35M rows in all; all of F_2 is about 5.48M classes (5,403,212 with ρ̄ ≥ 2, plus a ρ̄ = 0 part of about 80k, not yet pinned down).  The sign −1 count over F_2 is 1,485,591.  Cutoffs must be nondecreasing in q; the primitivity logic relies on this.  Exact counts for all q ≤ 64 are reproduced by `k3fq.py counts 3-64 --max-degree 6`.
-2. **Lovelace run.**  `sh scripts/lovelace_counts.sh` gives the exact F_2 total.  All real data generation belongs on lovelace.  claudeF cannot SSH there, so David runs it.  mimir is shared and often heavily loaded (load 100–160 seen), so keep jobs there tiny and niced.
+2. **Lovelace run (k3_fq_isog only).**  David runs it; claudeF/claudeM cannot SSH there.  `git clone --recursive`, `make`, `make test`; check `k3fq.toml` (data `/scratch/k3`, `jobs = 0` for one per core, Magma, `polredabs`, LMFDB checkout `~roed/lmfdb`); then `nohup sage -python k3fq.py > k3fq.log 2>&1 &` and `sage -python k3fq.py status` to follow it.  The output is `/scratch/k3/k3_fq_isog.txt`.  The lattice data is independent and can be added later with `update_from_file`.  mimir is shared and often heavily loaded (load 100–160 seen), so keep jobs there tiny and niced.
 3. **Database test.**  Run `create_k3_fq_isog.py`, then `copy_from` the 13-row file, then `K3FqStats().setup()`.  Check real Postgres behaviour of `$startswith` on `poly_str`, `$overlaps` on `galois_groups`, and null ordering.  Add indexes on (q, poly) and on `poly_str` with `text_pattern_ops`.
 4. **LMFDB integration.**
    - Import the knowls with `db.knowldb.yaml_import` (see `knowls/README.md`).  `rcs.ack.k3.fq` and `rcs.cite.k3.fq` still have TODOs.
@@ -64,7 +63,7 @@ Not implemented (exported as null):
    | basechange, kummer, census | streamed; base change only for subfield classes of large enough rank | < 1 |
    | export | 0.3 ms per row, ~1.5 KB per row | ~2, ~20 GB |
 
-   So ~20 CPU-h in all for `k3_fq_isog`, a few hours on one large VM.  Run `enumerate 2 --min-geometric-rank 0` rather than plain `enumerate 2`: it writes the classes grouped by transcendental part, so the caches in `basic` and `twists` hit almost every time.  The export holds the F_2 stage data in memory (several GB); 64 GB RAM and ~60 GB of disk are enough.  Magma (for the `fields` stage) may not be licensed on cloud VMs.
+   So ~20 CPU-h in all for `k3_fq_isog`, a few hours on one large VM.  The enumeration writes the classes grouped by transcendental part, so the caches in `basic` and `twists` hit almost every time.  The export holds the F_2 stage data in memory (several GB, so `export_jobs = 1` by default); 64 GB RAM and ~60 GB of disk are enough (the basic stage, the per-field exports and the combined `k3_fq_isog.txt` are about 1.1 KB per class each).  Magma (for the `fields` stage) may not be licensed on cloud VMs.
 
    **Lattices** (pointless classes imported from Simon Brandhorst, E ≤ 6 computed) are the unknown: 1.9M classes with E ≤ 6 and about 55M candidate genera after two necessary conditions, while Brandhorst's pointless run averaged ~0.9 CPU-h per genus (100 CPU-years for ~10^6 genera).  Run a pilot with his code on a few hundred E ≤ 2 and E ≤ 6 classes before committing.
 

@@ -36,7 +36,7 @@ def test_twist_stage_deduplicates(tmp_path):
     cols = [(c, ISOG_TYPES[c]) for c in BASIC_COLUMNS]
     write_file(str(d / "a.00000.txt"), cols, [row])
     write_file(str(d / "b.00000.txt"), cols, [row])
-    twists_stage(2, str(tmp_path), jobs=1)
+    twists_stage(2, str(tmp_path))
     out = list(read_file(str(tmp_path / "twists" / "q2.txt")))
     assert len(out) == 1
     assert out[0]["twist_count"] == 1 and out[0]["twists"] == []

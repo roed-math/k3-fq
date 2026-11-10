@@ -157,3 +157,14 @@ def read_header(filename):
         cols = F.readline().rstrip("\n").split(SEP)
         types = F.readline().rstrip("\n").split(SEP)
     return list(zip(cols, types))
+
+
+def count_rows(filename):
+    """
+    The number of rows in ``filename``, without decoding them.
+    """
+    n = 0
+    with open(filename, "rb") as F:
+        for block in iter(lambda: F.read(1 << 20), b""):
+            n += block.count(b"\n")
+    return n - 3
