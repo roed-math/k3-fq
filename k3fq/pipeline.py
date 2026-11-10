@@ -22,6 +22,10 @@ output it reads (as in make).  So an interrupted run resumes where it stopped,
 and after a change of configuration, or a ``rerun`` (which removes markers),
 exactly the affected steps are redone.  The basic, fields and twists stages
 also reuse their finished chunks.
+
+Markers written before 1649994 are plain text and do not record their
+configuration.  ``run`` stops when it finds one; ``adopt_markers`` converts
+them, for when the configuration has not changed since they were written.
 """
 import json
 import os
@@ -105,17 +109,20 @@ class Pipeline:
         try:
             return json.loads(text)
         except ValueError:
-            # written by 9179df5, before markers recorded their configuration
-            return {"time": os.path.getmtime(fname), "key": self._key(stage, q), "note": text.strip()}
+            # written before markers recorded their configuration
+            return {"legacy": True, "time": os.path.getmtime(fname), "note": text.strip()}
 
     def state(self, stage, q):
         """
         "done", "-" (never finished), "config" (finished with another
-        configuration) or "inputs" (an input has changed since).
+        configuration), "inputs" (an input has changed since), or "legacy"
+        (an old marker, made with an unknown configuration).
         """
         m = self._read_marker(stage, q)
         if m is None:
             return "-"
+        if m.get("legacy"):
+            return "legacy"
         if m["key"] != self._key(stage, q):
             return "config"
         for st, q0 in self._inputs(stage, q):
@@ -126,9 +133,10 @@ class Pipeline:
     def is_done(self, stage, q):
         return self.state(stage, q) == "done"
 
-    def _mark_done(self, stage, q, seconds, note):
+    def _mark_done(self, stage, q, seconds, note, when=None):
         os.makedirs(self.donedir, exist_ok=True)
-        marker = {"time": time.time(), "finished": time.strftime("%Y-%m-%d %H:%M:%S"),
+        when = time.time() if when is None else when
+        marker = {"time": when, "finished": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(when)),
                   "seconds": round(seconds), "note": note, "key": self._key(stage, q)}
         fname = self._marker(stage, q)
         with open(fname + ".tmp", "w") as F:
@@ -144,7 +152,7 @@ class Pipeline:
         qs = self.cfg.qs
         print("data directory %s" % self.datadir)
         print(("%-12s" % "" + "".join("%-8s" % ("q=%s" % q) for q in qs)).rstrip())
-        show = {"done": "done", "-": "-", "config": "redo", "inputs": "redo"}
+        show = {"done": "done", "-": "-", "config": "redo", "inputs": "redo", "legacy": "old"}
         for stage in STAGES:
             steps = self._steps(stage)
             if steps and steps[0][1] is None:
@@ -153,6 +161,24 @@ class Pipeline:
                 states = {q: show[self.state(stage, q)] for st, q in steps}
                 cells = [states.get(q, "") for q in qs]
             print(("%-12s" % stage + "".join("%-8s" % c for c in cells)).rstrip())
+
+    def legacy_markers(self):
+        return [(st, q) for stage in STAGES for st, q in self._steps(stage)
+                if (self._read_marker(st, q) or {}).get("legacy")]
+
+    def adopt_markers(self):
+        """
+        Convert the old plain-text markers of the configured steps, recording
+        the current configuration in them (keeping their times).  Only right
+        if the configuration has not changed since they were written.
+        """
+        steps = self.legacy_markers()
+        for st, q in steps:
+            m = self._read_marker(st, q)
+            self._mark_done(st, q, 0, "adopted: %s" % m["note"], when=m["time"])
+            print("adopted %s" % self._marker(st, q))
+        if not steps:
+            print("no old markers")
 
     def rerun(self, stage, qs=None):
         """
@@ -172,6 +198,13 @@ class Pipeline:
     # ------------------------------------------------------------------
 
     def run(self, stages=None):
+        legacy = self.legacy_markers()
+        if legacy:
+            raise RuntimeError(
+                "%s has %s markers from before 1649994 (e.g. %s), which do not record the configuration "
+                "they were made with.  If the configuration has not changed since, keep that work with "
+                "`k3fq.py adopt-markers`; otherwise remove them (or the whole done/ directory) to redo it."
+                % (self.donedir, len(legacy), os.path.basename(self._marker(*legacy[0]))))
         os.makedirs(self.datadir, exist_ok=True)
         print("data directory %s; fields %s" % (self.datadir, ", ".join(
             "q=%s (rank >= %s)" % (f.q, f.min_geometric_rank) for f in self.cfg.fields)), flush=True)

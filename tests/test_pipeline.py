@@ -144,14 +144,40 @@ def test_configuration_changes(tmp_path):
     assert S["twists", 2] == "done" and S["export", 2] == "inputs"
 
 
-def test_markers_from_9179df5(tmp_path):
-    pipeline = Pipeline(write_config(tmp_path))
-    os.makedirs(pipeline.donedir)
-    for st, q in [("enumerate", 2), ("basic", 2)]:
+def write_legacy_markers(pipeline, steps):
+    os.makedirs(pipeline.donedir, exist_ok=True)
+    for st, q in steps:
         with open(pipeline._marker(st, q), "w") as F:
             F.write("2026-11-10 01:00:00\t77s 182408 classes\n")
+
+
+def test_legacy_markers(tmp_path):
+    # plain-text markers (9179df5, 27bd23b) do not record their configuration
+    pipeline = Pipeline(write_config(tmp_path))
+    write_legacy_markers(pipeline, [("enumerate", 2), ("basic", 2), ("combine", None)])
+    S = states(pipeline)
+    assert S["enumerate", 2] == S["basic", 2] == S["combine", None] == "legacy"
+    with pytest.raises(RuntimeError, match="adopt-markers"):
+        pipeline.run()
+    # adopting them records the current configuration, keeping their times
+    t = os.path.getmtime(pipeline._marker("basic", 2))
+    pipeline.adopt_markers()
+    assert pipeline.legacy_markers() == []
+    assert pipeline._read_marker("basic", 2)["time"] == t
     S = states(pipeline)
     assert S["enumerate", 2] == S["basic", 2] == "done" and S["fields", 2] == "-"
+    # and later changes are detected as for any other marker
+    S = states(Pipeline(write_config(tmp_path, fields=FIELDS.replace("min_geometric_rank = 0", "min_geometric_rank = 2"))))
+    assert S["enumerate", 2] == "config" and S["combine", None] == "config"
+
+
+def test_legacy_markers_after_removing_a_field(tmp_path):
+    pipeline = Pipeline(write_config(tmp_path))
+    write_legacy_markers(pipeline, [(st, q) for stage in STAGES for st, q in pipeline._steps(stage)])
+    only2 = Pipeline(write_config(tmp_path, fields='[[field]]\nq = 2\nmin_geometric_rank = 0\n'))
+    assert only2.state("combine", None) == "legacy"
+    with pytest.raises(RuntimeError):
+        only2.run()
 
 
 def test_status_without_q2(tmp_path, capsys):

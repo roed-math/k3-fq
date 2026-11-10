@@ -6,6 +6,7 @@ LMFDB.
     sage -python k3fq.py                      run every unfinished stage
     sage -python k3fq.py status               which stages are finished
     sage -python k3fq.py rerun STAGE [Q ...]  redo a stage (and those using it)
+    sage -python k3fq.py adopt-markers        keep markers from before 1649994
     sage -python k3fq.py counts Q ...         count classes without listing them
 
 The data directory, the fields and the programs are set in the configuration
@@ -24,6 +25,8 @@ def main(argv=None):
     p = sub.add_parser("rerun", help="mark a stage and the stages using it as unfinished, then run")
     p.add_argument("stage")
     p.add_argument("q", type=int, nargs="*", help="only for these fields (default: all)")
+    sub.add_parser("adopt-markers", help="keep the work recorded by markers from before 1649994 "
+                   "(only if the configuration has not changed since)")
     p = sub.add_parser("counts", help="count classes by geometric Picard rank, without listing them")
     p.add_argument("q", nargs="+", help="prime powers, or ranges such as 3-64")
     p.add_argument("-j", "--jobs", type=int, default=None,
@@ -52,6 +55,9 @@ def main(argv=None):
     pipeline = Pipeline(cfg)
     if args.command == "status":
         pipeline.status()
+        return
+    if args.command == "adopt-markers":
+        pipeline.adopt_markers()
         return
     if args.command == "rerun":
         pipeline.rerun(args.stage, args.q)
