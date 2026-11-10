@@ -10,5 +10,5 @@
 set -e
 J=${J:-32}
 mkdir -p counts
-sage -python k3fq.py -j "$J" counts 2 --max-degree 22 --output counts/q2_all.md
-sage -python k3fq.py -j "$J" counts 3-64 --max-degree 6 --output counts/q3-64.md
+sage -python k3fq.py counts -j "$J" 2 --max-degree 22 --output counts/q2_all.md
+sage -python k3fq.py counts -j "$J" 3-64 --max-degree 6 --output counts/q3-64.md

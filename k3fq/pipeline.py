@@ -14,11 +14,16 @@ The pipeline that builds the k3_fq_isog upload file from a configuration
     export      export/k3_fq_isog.q{q}.txt
     combine     k3_fq_isog.txt: the upload file for all fields
 
-A finished stage leaves a marker in done/, and later runs skip it, so an
-interrupted run resumes where it stopped (the basic, fields and twists stages
-also reuse their finished chunks).  ``rerun`` removes the markers of a stage
-and of the stages that use its output.
+A finished step (a stage, for one field or for all of them) leaves a marker
+in done/, recording when it finished and the parts of the configuration it
+depends on.  A later run skips a step whose marker is current: present, made
+with the same configuration, and newer than the markers of the steps whose
+output it reads (as in make).  So an interrupted run resumes where it stopped,
+and after a change of configuration, or a ``rerun`` (which removes markers),
+exactly the affected steps are redone.  The basic, fields and twists stages
+also reuse their finished chunks.
 """
+import json
 import os
 import time
 
@@ -26,10 +31,6 @@ from .parallel import Runner
 from .pgformat import count_rows, read_header
 
 STAGES = ["enumerate", "basic", "fields", "twists", "kummer", "census", "basechange", "export", "combine"]
-# the stages that use the output of each stage, directly or not
-DEPENDENTS = {"enumerate": STAGES[1:], "basic": STAGES[2:]}
-for _stage in STAGES[2:]:
-    DEPENDENTS[_stage] = ["export", "combine"] if _stage not in ("export", "combine") else STAGES[STAGES.index(_stage) + 1:]
 
 
 class Pipeline:
@@ -53,46 +54,120 @@ class Pipeline:
     def _marker(self, stage, q):
         return os.path.join(self.donedir, stage if q is None else "%s.q%s" % (stage, q))
 
-    def is_done(self, stage, q):
-        return os.path.exists(self._marker(stage, q))
+    def _inputs(self, stage, q):
+        """
+        The steps whose output the step (stage, q) reads.
+        """
+        qs = self.cfg.qs
+        if stage == "enumerate":
+            return []
+        if stage == "basic":
+            return [("enumerate", q)]
+        if stage in ("fields", "twists", "kummer", "census"):
+            return [("basic", q)]
+        if stage == "basechange":
+            return [("basic", q0) for q0 in qs]
+        if stage == "export":
+            return [step for st in ("basic", "fields", "twists", "kummer", "census")
+                    for step in self._steps(st) if step[1] == q] + [("basechange", None)]
+        if stage == "combine":
+            return [("export", q0) for q0 in qs]
+        raise ValueError(stage)
 
-    def _mark_done(self, stage, q, note):
+    def _key(self, stage, q):
+        """
+        The parts of the configuration that the output of (stage, q) depends
+        on, apart from its inputs.
+        """
+        cfg = self.cfg
+        if q is None:
+            # basechange and combine: the whole list of fields
+            key = {"fields": [[f.q, f.min_geometric_rank, f.classes] for f in cfg.fields]}
+        else:
+            f = cfg.field(q)
+            key = {"field": [f.q, f.min_geometric_rank, f.classes]}
+        if stage == "fields":
+            key.update(polred=cfg.polred,
+                       polredabs_timeout=cfg.polredabs_timeout if cfg.polred == "polredabs" else None,
+                       lmfdb=cfg.lmfdb_path if cfg.lmfdb_labels else None)
+        elif stage == "kummer":
+            key.update(lmfdb=cfg.lmfdb_path)
+        elif stage == "census":
+            key.update(census=cfg.census_file)
+        return json.loads(json.dumps(key))
+
+    def _read_marker(self, stage, q):
+        fname = self._marker(stage, q)
+        if not os.path.exists(fname):
+            return None
+        with open(fname) as F:
+            text = F.read()
+        try:
+            return json.loads(text)
+        except ValueError:
+            # written by 9179df5, before markers recorded their configuration
+            return {"time": os.path.getmtime(fname), "key": self._key(stage, q), "note": text.strip()}
+
+    def state(self, stage, q):
+        """
+        "done", "-" (never finished), "config" (finished with another
+        configuration) or "inputs" (an input has changed since).
+        """
+        m = self._read_marker(stage, q)
+        if m is None:
+            return "-"
+        if m["key"] != self._key(stage, q):
+            return "config"
+        for st, q0 in self._inputs(stage, q):
+            if self.state(st, q0) != "done" or self._read_marker(st, q0)["time"] > m["time"]:
+                return "inputs"
+        return "done"
+
+    def is_done(self, stage, q):
+        return self.state(stage, q) == "done"
+
+    def _mark_done(self, stage, q, seconds, note):
         os.makedirs(self.donedir, exist_ok=True)
-        with open(self._marker(stage, q), "w") as F:
-            F.write("%s\t%s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), note))
+        marker = {"time": time.time(), "finished": time.strftime("%Y-%m-%d %H:%M:%S"),
+                  "seconds": round(seconds), "note": note, "key": self._key(stage, q)}
+        fname = self._marker(stage, q)
+        with open(fname + ".tmp", "w") as F:
+            json.dump(marker, F)
+            F.write("\n")
+        os.replace(fname + ".tmp", fname)
 
     def status(self):
         """
-        Print a table of the finished stages (the markers in done/ also
-        record when and how long they took).
+        Print a table of the steps: done, - (not yet), or redo (the
+        configuration or an input changed since it finished).
         """
         qs = self.cfg.qs
         print("data directory %s" % self.datadir)
         print(("%-12s" % "" + "".join("%-8s" % ("q=%s" % q) for q in qs)).rstrip())
+        show = {"done": "done", "-": "-", "config": "redo", "inputs": "redo"}
         for stage in STAGES:
             steps = self._steps(stage)
-            if steps[0][1] is None:
-                cells = ["done" if self.is_done(stage, None) else "-"] + [""] * (len(qs) - 1)
+            if steps and steps[0][1] is None:
+                cells = [show[self.state(stage, None)]]
             else:
-                done = {q: self.is_done(stage, q) for st, q in steps}
-                cells = [("done" if done[q] else "-") if q in done else "" for q in qs]
-            print("%-12s" % stage + "".join("%-8s" % c for c in cells).rstrip())
+                states = {q: show[self.state(stage, q)] for st, q in steps}
+                cells = [states.get(q, "") for q in qs]
+            print(("%-12s" % stage + "".join("%-8s" % c for c in cells)).rstrip())
 
     def rerun(self, stage, qs=None):
         """
-        Remove the markers of ``stage`` (for the fields ``qs``, default all)
-        and of the stages that use its output.
+        Remove the markers of ``stage`` (for the fields ``qs``, default all);
+        the steps that read its output are then redone too.
         """
         if stage not in STAGES:
             raise ValueError("unknown stage %s; the stages are %s" % (stage, ", ".join(STAGES)))
         qs = set(self.cfg.qs if not qs else qs)
-        for st in [stage] + DEPENDENTS[stage]:
-            for s, q in self._steps(st):
-                if q is None or q in qs:
-                    marker = self._marker(s, q)
-                    if os.path.exists(marker):
-                        os.remove(marker)
-                        print("removed %s" % marker)
+        for st, q in self._steps(stage):
+            if q is None or q in qs:
+                marker = self._marker(st, q)
+                if os.path.exists(marker):
+                    os.remove(marker)
+                    print("removed %s" % marker)
 
     # ------------------------------------------------------------------
 
@@ -100,16 +175,18 @@ class Pipeline:
         os.makedirs(self.datadir, exist_ok=True)
         print("data directory %s; fields %s" % (self.datadir, ", ".join(
             "q=%s (rank >= %s)" % (f.q, f.min_geometric_rank) for f in self.cfg.fields)), flush=True)
+        reasons = {"-": "", "config": " (the configuration has changed)", "inputs": " (its input has changed)"}
         for stage in stages or STAGES:
             for st, q in self._steps(stage):
-                if self.is_done(st, q):
+                state = self.state(st, q)
+                if state == "done":
                     continue
                 what = st if q is None else "%s q=%s" % (st, q)
-                print("\n=== %s" % what, flush=True)
+                print("\n=== %s%s" % (what, reasons[state]), flush=True)
                 t0 = time.time()
                 note = getattr(self, "_" + st)(q) or ""
                 elapsed = time.time() - t0
-                self._mark_done(st, q, "%.0fs %s" % (elapsed, note))
+                self._mark_done(st, q, elapsed, note)
                 print("=== %s done (%.0fs) %s" % (what, elapsed, note), flush=True)
 
     def _check(self, what, q, n):
@@ -161,12 +238,12 @@ class Pipeline:
     def _export(self, q):
         # all fields at once, in parallel; the markers record each field
         todo = [q0 for q0 in self.cfg.qs if not self.is_done("export", q0)]
+        t0 = time.time()
         self.runner.run("export", [(q0, self.datadir) for q0 in todo], jobs=self.cfg.export_jobs)
         for q0 in todo:
-            n = count_rows(self._export_file(q0))
-            note = self._check("export", q0, n)
+            note = self._check("export", q0, count_rows(self._export_file(q0)))
             if q0 != q:
-                self._mark_done("export", q0, note)
+                self._mark_done("export", q0, time.time() - t0, note)
         return self._check("export", q, count_rows(self._export_file(q)))
 
     def _export_file(self, q):

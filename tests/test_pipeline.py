@@ -3,6 +3,7 @@ The configuration file, the GNU parallel runner and the pipeline's markers.
 """
 import os
 import shutil
+import sys
 import filecmp
 
 import pytest
@@ -15,11 +16,15 @@ from k3fq.pipeline import Pipeline, STAGES
 DATA = os.path.join(os.path.dirname(__file__), "data", "q2_sample.txt")
 
 
-def write_config(tmp_path, extra=""):
-    fname = tmp_path / "test.toml"
-    fname.write_text('data = "%s"\njobs = 2\nchunk_size = 7\n%s\n'
-                     '[[field]]\nq = 2\nmin_geometric_rank = 0\n\n'
-                     '[[field]]\nq = 4\nmin_geometric_rank = 18\nclasses = 3\n' % (tmp_path / "data", extra))
+FIELDS = ('[[field]]\nq = 2\nmin_geometric_rank = 0\n\n'
+          '[[field]]\nq = 4\nmin_geometric_rank = 18\nclasses = 3\n')
+
+
+def write_config(tmp_path, extra="", fields=FIELDS):
+    # spaces in the paths, which GNU parallel must keep whole
+    fname = tmp_path / "test config.toml"
+    fname.write_text('data = "%s"\njobs = 2\nchunk_size = 7\n%s\n%s'
+                     % (tmp_path / "data dir", extra, fields))
     return load_config(str(fname))
 
 
@@ -78,21 +83,110 @@ def test_basic_stage_rejects_stale_chunks(tmp_path):
         basic_stage(polyfile, datadir, chunksize=8)
 
 
-def test_rerun_markers(tmp_path):
-    cfg = write_config(tmp_path)
-    pipeline = Pipeline(cfg)
+def mark_all(pipeline):
     for stage in STAGES:
         for st, q in pipeline._steps(stage):
-            pipeline._mark_done(st, q, "")
+            pipeline._mark_done(st, q, 0, "")
+
+
+def states(pipeline):
+    return {(st, q): pipeline.state(st, q) for stage in STAGES for st, q in pipeline._steps(stage)}
+
+
+def test_rerun_markers(tmp_path):
+    pipeline = Pipeline(write_config(tmp_path))
+    mark_all(pipeline)
+    assert set(states(pipeline).values()) == {"done"}
     assert [q for st, q in pipeline._steps("census")] == [2]
     pipeline.rerun("fields", [4])
-    assert not pipeline.is_done("fields", 4) and pipeline.is_done("fields", 2)
-    assert not pipeline.is_done("export", 4) and pipeline.is_done("export", 2)
-    assert not pipeline.is_done("combine", None)
-    assert pipeline.is_done("basechange", None) and pipeline.is_done("twists", 4)
-    pipeline.rerun("basic")
-    assert not any(pipeline.is_done(st, q) for stage in STAGES[1:] for st, q in pipeline._steps(stage))
-    assert pipeline.is_done("enumerate", 2)
+    S = states(pipeline)
+    assert S["fields", 4] == "-" and S["fields", 2] == "done"
+    assert S["export", 4] == "inputs" and S["export", 2] == "done"
+    assert S["combine", None] == "inputs"
+    assert S["basechange", None] == "done" and S["twists", 4] == "done"
+
+
+def test_rerun_through_basechange(tmp_path):
+    # base change over F_4 uses the classes over F_2, so redoing the basic
+    # stage for q = 2 redoes the export for q = 4 too
+    pipeline = Pipeline(write_config(tmp_path))
+    mark_all(pipeline)
+    pipeline.rerun("basic", [2])
+    S = states(pipeline)
+    assert S["basic", 2] == "-" and S["basic", 4] == "done"
+    assert S["fields", 2] == "inputs" and S["fields", 4] == "done"
+    assert S["basechange", None] == "inputs"
+    assert S["export", 2] == S["export", 4] == S["combine", None] == "inputs"
+    # redoing them in order makes everything current again
+    for stage in STAGES:
+        for st, q in pipeline._steps(stage):
+            if pipeline.state(st, q) != "done":
+                pipeline._mark_done(st, q, 0, "")
+    assert set(states(pipeline).values()) == {"done"}
+
+
+def test_configuration_changes(tmp_path):
+    only2 = '[[field]]\nq = 2\nmin_geometric_rank = 0\n'
+    mark_all(Pipeline(write_config(tmp_path, fields=only2)))
+    # adding a field redoes the steps for all fields together
+    S = states(Pipeline(write_config(tmp_path)))
+    assert S["enumerate", 2] == S["basic", 2] == S["fields", 2] == "done"
+    assert S["enumerate", 4] == "-"
+    assert S["basechange", None] == S["combine", None] == "config"
+    assert S["export", 2] == "inputs"
+    # changing a cutoff or an expected count redoes that field from the start
+    mark_all(Pipeline(write_config(tmp_path)))
+    S = states(Pipeline(write_config(tmp_path, fields=FIELDS.replace("classes = 3", "classes = 4"))))
+    assert S["enumerate", 4] == S["basic", 4] == S["export", 4] == "config" and S["enumerate", 2] == "done"
+    # the reduction method only affects the fields stage and what reads it
+    S = states(Pipeline(write_config(tmp_path, '[number_fields]\npolred = "polredbest"\n')))
+    assert S["fields", 2] == S["fields", 4] == "config"
+    assert S["twists", 2] == "done" and S["export", 2] == "inputs"
+
+
+def test_markers_from_9179df5(tmp_path):
+    pipeline = Pipeline(write_config(tmp_path))
+    os.makedirs(pipeline.donedir)
+    for st, q in [("enumerate", 2), ("basic", 2)]:
+        with open(pipeline._marker(st, q), "w") as F:
+            F.write("2026-11-10 01:00:00\t77s 182408 classes\n")
+    S = states(pipeline)
+    assert S["enumerate", 2] == S["basic", 2] == "done" and S["fields", 2] == "-"
+
+
+def test_status_without_q2(tmp_path, capsys):
+    pipeline = Pipeline(write_config(tmp_path, fields='[[field]]\nq = 3\nmin_geometric_rank = 22\n'))
+    pipeline.status()
+    out = capsys.readouterr().out
+    assert "census" in out and "basechange  -" in out
+
+
+def test_polred_chunks_depend_on_settings(tmp_path):
+    from k3fq.stages import _factor_chunks
+    factors = [(1, 1, 1), (2, 1, 1)]
+    a = _factor_chunks(str(tmp_path), "polred", factors, "polredabs 600")
+    b = _factor_chunks(str(tmp_path), "polred", factors, "polredbest")
+    c = _factor_chunks(str(tmp_path), "polred", factors, "polredabs 600")
+    assert a == c and a != b
+
+
+def test_lmfdb_imported_from_checkout(tmp_path):
+    # the LMFDB reads secrets.ini relative to the working directory
+    from k3fq.lmfdb_access import lmfdb_db
+    checkout = tmp_path / "lmfdb checkout"
+    (checkout / "lmfdb").mkdir(parents=True)
+    (checkout / "lmfdb" / "__init__.py").write_text("import os\ndb = os.getcwd()\n")
+    cfg = write_config(tmp_path, '[lmfdb]\npath = "%s"\n' % checkout)
+    cwd = os.getcwd()
+    saved = sys.modules.pop("lmfdb", None)
+    try:
+        assert lmfdb_db(cfg) == str(checkout)
+        assert os.getcwd() == cwd
+    finally:
+        sys.modules.pop("lmfdb", None)
+        if saved is not None:
+            sys.modules["lmfdb"] = saved
+        sys.path.remove(str(checkout))
 
 
 def test_count_check(tmp_path):

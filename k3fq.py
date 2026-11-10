@@ -26,6 +26,8 @@ def main(argv=None):
     p.add_argument("q", type=int, nargs="*", help="only for these fields (default: all)")
     p = sub.add_parser("counts", help="count classes by geometric Picard rank, without listing them")
     p.add_argument("q", nargs="+", help="prime powers, or ranges such as 3-64")
+    p.add_argument("-j", "--jobs", type=int, default=None,
+                   help="enumeration threads (default: jobs in the configuration)")
     p.add_argument("--max-degree", type=int, default=8,
                    help="largest transcendental degree 2k to count; 22 counts everything (default 8)")
     p.add_argument("--output", default=None, help="also write the markdown table here")
@@ -44,7 +46,7 @@ def main(argv=None):
         return
     if args.command == "counts":
         from k3fq.counts import counts_table, parse_qs
-        counts_table(parse_qs(args.q), args.max_degree, threads=cfg.jobs, out=args.output)
+        counts_table(parse_qs(args.q), args.max_degree, threads=args.jobs or cfg.jobs, out=args.output)
         return
     from k3fq.pipeline import Pipeline
     pipeline = Pipeline(cfg)

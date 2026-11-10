@@ -62,7 +62,8 @@ class Runner:
         with open(argfile, "w") as F:
             for t in tasks:
                 F.write("\t".join(t) + "\n")
-        cmd = [cfg.parallel, "--will-cite", "--jobs", str(jobs), "--halt", "now,fail=1",
+        # --quote: parallel runs the command through a shell; keep paths with spaces whole
+        cmd = [cfg.parallel, "--will-cite", "--quote", "--jobs", str(jobs), "--halt", "now,fail=1",
                "--joblog", os.path.join(jobdir, "%s.%s.log" % (name, stamp)),
                "--colsep", "\t", "-a", argfile,
                cfg.sage, "-python", SCRIPT, "--config", cfg.path, "worker", name]

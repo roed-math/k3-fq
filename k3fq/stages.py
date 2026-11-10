@@ -73,16 +73,17 @@ def _write_lines_atomic(fname, lines):
     os.replace(tmp, fname)
 
 
-def _factor_chunks(workdir, kind, factors):
+def _factor_chunks(workdir, kind, factors, settings=""):
     """
     Write ``factors`` in chunks to ``workdir/{kind}.{hash}.in`` and return
-    the (input, output) pairs.  The names depend on the contents, so an output
-    from an earlier run is only reused for the same input.
+    the (input, output) pairs.  The names depend on the contents and on
+    ``settings``, so an output from an earlier run is only reused for the same
+    input and settings.
     """
     pairs = []
     for i in range(0, len(factors), FACTOR_CHUNK):
         lines = [",".join(map(str, f)) for f in factors[i:i + FACTOR_CHUNK]]
-        h = hashlib.sha1("\n".join(lines).encode()).hexdigest()[:16]
+        h = hashlib.sha1("\n".join([settings] + lines).encode()).hexdigest()[:16]
         infile = os.path.join(workdir, "%s.%s.in" % (kind, h))
         if not os.path.exists(infile):
             _write_lines_atomic(infile, lines)
@@ -113,10 +114,15 @@ def reduced_polynomial(f, method="polredabs", timeout=600):
     return [int(c) for c in pari.Vecrev(h)], "polredbest"
 
 
-@worker("polred")
-def polred_chunk(cfg, infile, outfile):
+def polred_settings(cfg):
     method = cfg.polred if cfg is not None else "polredabs"
     timeout = cfg.polredabs_timeout if cfg is not None else 600
+    return method, timeout
+
+
+@worker("polred")
+def polred_chunk(cfg, infile, outfile):
+    method, timeout = polred_settings(cfg)
     t0 = time.time()
     lines = []
     with open(infile) as F:
@@ -180,7 +186,9 @@ def fields_stage(q, datadir, runner=None):
     assert set(galois) == missing
 
     factors = sorted(factors)
-    pairs = _factor_chunks(workdir, "polred", factors)
+    method, timeout = polred_settings(cfg)
+    pairs = _factor_chunks(workdir, "polred", factors,
+                           "polredabs %s" % timeout if method == "polredabs" else method)
     runner.run("polred", [p for p in pairs if not os.path.exists(p[1])])
 
     def parse_polred(line):
