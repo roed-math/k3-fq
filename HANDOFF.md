@@ -35,7 +35,7 @@ Key design points:
 
 Not implemented (exported as null):
 - `polarization_degrees` beyond the census, which gives degree 4 for its classes, with `polarization_degrees_complete` false.  Taelman's theorem would give complete lists for ordinary classes; results that need potential semistable reduction (p ≤ 3 in our data) are to be kept out of this column (decided 2026-11-06).
-- The whole `k3_fq_lattices` computation (Oscar, Brandhorst–Muller).
+- The `k3_fq_lattices` computation.  A prototype in `lattices/` (Julia + Oscar, following Auel–Shaikh arXiv:2611.13468: rootless coinvariant lattices with discriminants bounded by their Theorem 4.1, glued to the invariant lattice, then Artin–Tate, Brauer-map and ℓ-adic checks) was tested on a sample of q = 2, ρ̄ = 4 (2026-11-12); see `lattices/README.md`.
 - Positive realizability beyond the quartic census over F_2 (the `census` stage sets `realizable_k3 = 1` for its 52,755 classes; all of them pass our necessary conditions).  Otherwise only necessary conditions are used, giving −1.
 
 ## Open decisions and next steps
