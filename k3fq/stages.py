@@ -12,6 +12,7 @@ live under the data directory:
     basechange/q{q}.txt       BASECHANGE_COLUMNS
     kummer/q{q}.txt           KUMMER_COLUMNS
     census/q{q}.txt           CENSUS_COLUMNS, for the classes known to contain a K3 surface
+    refined_at/q{q}.txt       the classes ruled out by the refined Artin-Tate conditions
     export/k3_fq_isog.q{q}.txt  all columns, ready for psycodict's copy_from
 """
 import glob
@@ -449,6 +450,61 @@ def census_stage(q, datadir, census_file=None):
 
 
 # ----------------------------------------------------------------------
+# refined Artin-Tate conditions (Auel-Shaikh, arXiv:2611.13468)
+
+REFINED_AT_COLUMNS = [("label", "text"), ("realizable_k3", "smallint"), ("refined_at_failure", "integer[]")]
+
+
+@worker("refinedat")
+def refined_at_chunk(cfg, basicfile, outfile):
+    from .refined_at import refined_artin_tate_failures
+    rows = []
+    for row in read_file(basicfile, ["label", "cyclotomic_factors", "transcendental_poly", "realizable_k3"]):
+        if row["realizable_k3"] != 0:
+            continue
+        f = refined_artin_tate_failures(row["cyclotomic_factors"], row["transcendental_poly"])
+        if f:
+            rows.append({"label": row["label"], "realizable_k3": -1, "refined_at_failure": list(f[0])})
+    write_file(outfile, REFINED_AT_COLUMNS, rows)
+
+
+def refined_at_stage(q, datadir, runner=None):
+    """
+    The classes that pass the necessary conditions of the basic stage but fail
+    a refined Artin-Tate condition (see refined_at.py), with the first failing
+    (base change degree l, root of unity order m).  The export sets their
+    realizable_k3 (and realizable_kummer, where defined) to -1.  It is an
+    error for a class of the census to be among them.
+    """
+    runner = runner or Runner()
+    workdir = os.path.join(datadir, "refined_at", "q%s" % q)
+    os.makedirs(workdir, exist_ok=True)
+    tasks = []
+    outs = []
+    for fname in basic_files(datadir, q):
+        outfile = os.path.join(workdir, "rat." + os.path.basename(fname))
+        outs.append(outfile)
+        if not _newer(outfile, [fname]):
+            tasks.append((fname, outfile))
+    runner.run("refinedat", tasks)
+    seen = set()
+    rows = []
+    for outfile in outs:
+        for row in read_file(outfile):
+            if row["label"] not in seen:
+                seen.add(row["label"])
+                rows.append(row)
+    census = _load_by_label(os.path.join(datadir, "census", "q%s.txt" % q)) or {}
+    clash = [r["label"] for r in rows if r["label"] in census]
+    if clash:
+        raise RuntimeError("%s classes of the census fail a refined Artin-Tate condition, e.g. %s" % (len(clash), clash[0]))
+    rows.sort(key=lambda r: label_sort_key(r["label"]))
+    write_file(os.path.join(datadir, "refined_at", "q%s.txt" % q), REFINED_AT_COLUMNS, rows)
+    print("q=%s: %s classes ruled out by the refined Artin-Tate conditions" % (q, len(rows)), flush=True)
+    return len(rows)
+
+
+# ----------------------------------------------------------------------
 # export
 
 def _load_by_label(fname):
@@ -471,6 +527,11 @@ def export_stage(q, datadir):
             print("q=%s: no %s data; those columns will be null" % (q, stage))
         else:
             extra[stage] = data
+    # only lists the classes ruled out by the refined Artin-Tate conditions
+    refined = _load_by_label(os.path.join(datadir, "refined_at", "q%s.txt" % q))
+    if refined is None:
+        refined = {}
+        print("q=%s: no refined Artin-Tate data; realizable_k3 only reflects the basic conditions" % q)
     # only lists the classes known to contain a K3 surface
     census = _load_by_label(os.path.join(datadir, "census", "q%s.txt" % q))
     if census is None:
@@ -490,6 +551,12 @@ def export_stage(q, datadir):
                 row["number_fields"] = [fields[f]["nf_label"] or "" for f in facs]
             for data in extra.values():
                 row.update(data[row["label"]])
+            if row["label"] in refined:
+                if row["label"] in census:
+                    raise RuntimeError("%s is in the census but fails a refined Artin-Tate condition" % row["label"])
+                row["realizable_k3"] = -1
+                if row.get("realizable_kummer") is not None:
+                    row["realizable_kummer"] = -1
             row.update(census.get(row["label"], {}))
             yield row
     out = os.path.join(outdir, "k3_fq_isog.q%s.txt" % q)

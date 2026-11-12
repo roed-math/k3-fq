@@ -55,3 +55,13 @@ classes = 793048
 q = 8
 min_geometric_rank = 20
 classes = 915176
+
+[[field]]
+q = 9
+min_geometric_rank = 20
+classes = 1037304
+
+[[field]]
+q = 11
+min_geometric_rank = 20
+classes = 1281560

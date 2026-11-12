@@ -1,4 +1,4 @@
-- written: 2026-11-05 18:45:00
+- written: 2026-11-12 15:30:00
 - id: rcs.source.k3.fq
   title: Source of the data on motives of K3 type over finite fields
   content: |-
@@ -21,8 +21,8 @@
     For each base field $\F_q$ in the database, the database contains every polynomial $P(T) = q + a_1T + \cdots \pm qT^{22} \in \Z[T]$ with all roots on the unit circle and geometric Picard rank at least $R(q)$, given below, whether or not it comes from a variety.  In particular, every class over $\F_2$ is included.
 
     <table class="ntdata">
-    <tr><td>$q$</td><td>$2$</td><td>$3$</td><td>$4$</td><td>$5$</td><td>$7$</td><td>$8$</td></tr>
-    <tr><td>$R(q)$</td><td>$0$</td><td>$16$</td><td>$18$</td><td>$20$</td><td>$20$</td><td>$20$</td></tr>
+    <tr><td>$q$</td><td>$2$</td><td>$3$</td><td>$4$</td><td>$5$</td><td>$7$</td><td>$8$</td><td>$9$</td><td>$11$</td></tr>
+    <tr><td>$R(q)$</td><td>$0$</td><td>$16$</td><td>$18$</td><td>$20$</td><td>$20$</td><td>$20$</td><td>$20$</td><td>$20$</td></tr>
     </table>
 
     Some quantities have not been computed for every class: the LMFDB labels of the number fields of the transcendental part, the list of twists when there are more than $50$, Kummer candidates in characteristic $2$, polarization degrees, and candidate Néron–Severi lattices.  Apart from the quartic census over $\F_2$, realizability uses only necessary conditions.

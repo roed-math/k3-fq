@@ -1,4 +1,4 @@
-- written: 2026-11-05 18:45:00
+- written: 2026-11-12 15:30:00
 - id: k3.motive
   title: Motive of K3 type
   content: |-
@@ -199,7 +199,7 @@
 
     Over $\F_2$, the classes containing a smooth quartic surface, from the census of Kedlaya and Sutherland \cite{mr:3540942,arxiv:1511.06945}, are marked *yes*.  Otherwise only necessary conditions have been applied: a class cannot contain
 
-    - a K3 surface unless its {{ KNOWL('k3.picard_rank', 'Picard rank') }} is positive, it satisfies the {{ KNOWL('k3.fq.ej_condition', 'Artin–Tate condition') }} and {{ KNOWL('k3.fq.count_conditions', 'count growth') }}, and it has a {{ KNOWL('k3.fq.newton_polygon', 'K3 Newton polygon') }};
+    - a K3 surface unless its {{ KNOWL('k3.picard_rank', 'Picard rank') }} is positive, it satisfies the {{ KNOWL('k3.fq.ej_condition', 'Artin–Tate condition') }} and {{ KNOWL('k3.fq.count_conditions', 'count growth') }}, it has a {{ KNOWL('k3.fq.newton_polygon', 'K3 Newton polygon') }}, and it satisfies the refined Artin–Tate conditions of Auel and Shaikh \cite{arxiv:2611.13468} over $\F_q$ and its extensions, with the discriminant bounds of Auel, Engel, Kedlaya and Shaikh \cite{arxiv:2611.08356}.  These say that special values of $P(T)$ at roots of unity are large enough for the Frobenius coinvariant part of the {{ KNOWL('ag.neron_severi', 'Néron–Severi lattice') }}, which is definite and has no vectors of norm $-2$, to exist;
     - a cubic, Gushel–Mukai or Verra fourfold unless it has a K3 Newton polygon and the numbers of closed points of that fourfold are nonnegative;
     - a Kummer surface unless it can contain a K3 surface and an abelian surface over $\F_q$ has a normalized wedge square with the same {{ KNOWL('k3.fq.transcendental_part', 'transcendental part') }} (not computed in characteristic $2$).
 - id: k3.fq.twist

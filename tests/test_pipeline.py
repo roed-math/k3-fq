@@ -32,8 +32,8 @@ def test_default_config():
     cfg = load_config(DEFAULT_CONFIG)
     assert cfg.datadir == "/scratch/k3"
     assert cfg.polred == "polredabs"
-    assert cfg.qs == [2, 3, 4, 5, 7, 8]
-    assert sum(f.classes for f in cfg.fields) == 13346626
+    assert cfg.qs == [2, 3, 4, 5, 7, 8, 9, 11]
+    assert sum(f.classes for f in cfg.fields) == 15665490
     assert cfg.field(3).polyfile_name == "q3_rho16.txt"
 
 

@@ -8,6 +8,7 @@ LMFDB.
     sage -python k3fq.py rerun STAGE [Q ...]  redo a stage (and those using it)
     sage -python k3fq.py adopt-markers        keep markers from before 1649994
     sage -python k3fq.py counts Q ...         count classes without listing them
+    sage -python k3fq.py update-file [Q ...]  update file for realizable_k3 (refined Artin-Tate)
 
 The data directory, the fields and the programs are set in the configuration
 file (default: k3fq.toml next to this script); see README.md.
@@ -25,6 +26,9 @@ def main(argv=None):
     p = sub.add_parser("rerun", help="mark a stage and the stages using it as unfinished, then run")
     p.add_argument("stage")
     p.add_argument("q", type=int, nargs="*", help="only for these fields (default: all)")
+    p = sub.add_parser("update-file", help="write DATA/updates/realizable.txt for update_from_file: the classes "
+                       "ruled out by the refined Artin-Tate conditions")
+    p.add_argument("q", type=int, nargs="*", help="only these fields (default: all)")
     sub.add_parser("adopt-markers", help="keep the work recorded by markers from before 1649994 "
                    "(only if the configuration has not changed since)")
     p = sub.add_parser("counts", help="count classes by geometric Picard rank, without listing them")
@@ -55,6 +59,9 @@ def main(argv=None):
     pipeline = Pipeline(cfg)
     if args.command == "status":
         pipeline.status()
+        return
+    if args.command == "update-file":
+        pipeline.update_file(args.q)
         return
     if args.command == "adopt-markers":
         pipeline.adopt_markers()

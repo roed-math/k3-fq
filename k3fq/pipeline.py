@@ -10,6 +10,8 @@ The pipeline that builds the k3_fq_isog upload file from a configuration
     twists      twists/q{q}.txt: twist classes and minimal twist degrees
     kummer      kummer/q{q}.txt: Kummer candidates (LMFDB abelian surfaces)
     census      census/q{q}.txt: the quartic census over F_2
+    refined_at  refined_at/q{q}.txt: classes ruled out by the refined Artin-Tate
+                conditions (Auel-Shaikh), which the export marks impossible
     basechange  basechange/q{q}.txt: primitive models (all fields at once)
     export      export/k3_fq_isog.q{q}.txt
     combine     k3_fq_isog.txt: the upload file for all fields
@@ -34,7 +36,8 @@ import time
 from .parallel import Runner
 from .pgformat import count_rows, read_header
 
-STAGES = ["enumerate", "basic", "fields", "twists", "kummer", "census", "basechange", "export", "combine"]
+STAGES = ["enumerate", "basic", "fields", "twists", "kummer", "census", "refined_at", "basechange", "export",
+          "combine"]
 
 
 class Pipeline:
@@ -69,10 +72,13 @@ class Pipeline:
             return [("enumerate", q)]
         if stage in ("fields", "twists", "kummer", "census"):
             return [("basic", q)]
+        if stage == "refined_at":
+            # it checks that no class of the census is ruled out
+            return [("basic", q)] + [step for step in self._steps("census") if step[1] == q]
         if stage == "basechange":
             return [("basic", q0) for q0 in qs]
         if stage == "export":
-            return [step for st in ("basic", "fields", "twists", "kummer", "census")
+            return [step for st in ("basic", "fields", "twists", "kummer", "census", "refined_at")
                     for step in self._steps(st) if step[1] == q] + [("basechange", None)]
         if stage == "combine":
             return [("export", q0) for q0 in qs]
@@ -98,6 +104,9 @@ class Pipeline:
             key.update(lmfdb=cfg.lmfdb_path)
         elif stage == "census":
             key.update(census=cfg.census_file)
+        elif stage == "refined_at":
+            from .refined_at import VERSION
+            key.update(refined_at=VERSION)
         return json.loads(json.dumps(key))
 
     def _read_marker(self, stage, q):
@@ -264,6 +273,10 @@ class Pipeline:
         from .stages import census_stage
         return "%s classes" % census_stage(q, self.datadir, self.cfg.census_file)
 
+    def _refined_at(self, q):
+        from .stages import refined_at_stage
+        return "%s classes ruled out" % refined_at_stage(q, self.datadir, self.runner)
+
     def _basechange(self, q):
         from .stages import basechange_stage
         basechange_stage(self.datadir, self.cfg.qs)
@@ -278,6 +291,35 @@ class Pipeline:
             if q0 != q:
                 self._mark_done("export", q0, time.time() - t0, note)
         return self._check("export", q, count_rows(self._export_file(q)))
+
+    def update_file(self, qs=None):
+        """
+        Write DATA/updates/realizable.txt, an update file for psycodict's
+        update_from_file: label, realizable_k3 and realizable_kummer for the
+        classes that the refined Artin-Tate conditions rule out (for an
+        already loaded table whose data predates the refined_at stage).
+        """
+        from .pgformat import read_file, write_file
+        qs = list(qs) if qs else self.cfg.qs
+        rows = []
+        for q in qs:
+            if not self.is_done("refined_at", q):
+                raise RuntimeError("the refined_at stage for q=%s is not done; run the pipeline first" % q)
+            kummer = {}
+            kfile = os.path.join(self.datadir, "kummer", "q%s.txt" % q)
+            if os.path.exists(kfile):
+                kummer = {r["label"]: r["realizable_kummer"] for r in read_file(kfile, ["label", "realizable_kummer"])}
+            n = 0
+            for r in read_file(os.path.join(self.datadir, "refined_at", "q%s.txt" % q), ["label"]):
+                rows.append({"label": r["label"], "realizable_k3": -1,
+                             "realizable_kummer": None if kummer.get(r["label"]) is None else -1})
+                n += 1
+            print("q=%s: %s classes" % (q, n))
+        out = os.path.join(self.datadir, "updates", "realizable.txt")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        write_file(out, [("label", "text"), ("realizable_k3", "smallint"), ("realizable_kummer", "smallint")], rows)
+        print("wrote %s (%s rows)" % (out, len(rows)))
+        return out
 
     def _export_file(self, q):
         return os.path.join(self.datadir, "export", "k3_fq_isog.q%s.txt" % q)

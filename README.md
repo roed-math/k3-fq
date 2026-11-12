@@ -29,11 +29,13 @@ The pipeline is set up by a configuration file, [`k3fq.toml`](k3fq.toml) by defa
     sage -python k3fq.py status                # which stages have finished
     sage -python k3fq.py rerun twists 3        # redo a stage (here only for q = 3) and the stages that use it
 
+For a table already loaded from data computed before the `refined_at` stage existed, `sage -python k3fq.py update-file [Q ...]` writes `DATA/updates/realizable.txt` (label, `realizable_k3`, `realizable_kummer` for the classes that stage rules out), for psycodict's `update_from_file`.
+
 The result is `DATA/k3_fq_isog.txt`, for all the fields together; `DATA/export/k3_fq_isog.q{q}.txt` has each field separately.  Each finished step leaves a marker in `DATA/done/` recording the configuration it used, so after an interruption the same command resumes.  A step is redone when the parts of the configuration it uses change (adding a field redoes base change, the exports and `combine`; changing a cutoff or count redoes that field) or when a step it reads from has been redone since, as in make.  The basic, fields and twists stages also keep their finished chunks, and `rerun` reuses those: to recompute the basic stage from scratch (after changing its code, say), also move `DATA/basic/q{q}` away.  Each worker loads the code afresh from the checkout, so don't `git pull` while a run is in progress.  Markers written before commit 1649994 do not record their configuration, so `run` stops if it finds one: if the configuration has not changed since they were written, `sage -python k3fq.py adopt-markers` keeps them; otherwise delete them.
 
 The parallel parts (the basic stage, the polynomial reductions and Magma calls of the fields stage, the twist keys and pairwise twists, and the exports) are run by GNU parallel.  Each task is a separate `sage -python k3fq.py --config FILE worker ...` process, and GNU parallel records it in `DATA/jobs/*.log`.  Without a configuration file (as in the tests) the same tasks run one after another in-process.
 
-The enumeration, basic, twists and export stages check their number of classes against the configuration and stop on a mismatch.  The default configuration has the planned cutoffs (all classes for q = 2; ρ̄ ≥ 16 for q = 3, ρ̄ ≥ 18 for q = 4, ρ̄ ≥ 20 for q = 5, 7, 8; 13,346,626 classes in all).  The cutoffs must be nondecreasing along subfields.
+The enumeration, basic, twists and export stages check their number of classes against the configuration and stop on a mismatch.  The default configuration has the planned cutoffs (all classes for q = 2; ρ̄ ≥ 16 for q = 3, ρ̄ ≥ 18 for q = 4, ρ̄ ≥ 20 for q = 5, 7, 8, 9, 11; 15,665,490 classes in all).  The cutoffs must be nondecreasing along subfields.
 
 The export file is in psycodict's `copy_from`/`reload` format: a header line with column names, a line of types, a blank line, then `|`-separated rows.
 
@@ -47,6 +49,7 @@ The export file is in psycodict's `copy_from`/`reload` format: a header line wit
 | `twists` | geometric class (twist class), its size, and for classes of at most 50 members the minimal twist degrees with the common base change | `twists/q{q}.txt` |
 | `kummer` | abelian surfaces over F_q (from `av_fq_isog`) whose wedge square has the same transcendental part | `kummer/q{q}.txt` |
 | `census` | (q = 2 only) `realizable_k3 = 1` for the classes known to contain a K3 surface: the 52,755 zeta functions of smooth quartic surfaces over F_2 from Kedlaya and Sutherland's census (`external/root-unitary/k3-quartic-f2/k3final.txt`); these classes also get `polarization_degrees = [4]`, not known to be complete.  It is an error for one of these to fail a necessary condition | `census/q2.txt` |
+| `refined_at` | the classes that pass the basic necessary conditions but fail a refined Artin–Tate condition (Auel–Shaikh, arXiv:2611.13468, Theorem 4.1, over F_q and its extensions F_{q^l} with l \| E, using the discriminant bounds of Auel–Engel–Kedlaya–Shaikh, arXiv:2611.08356); the export sets their `realizable_k3` and `realizable_kummer` to −1.  See `k3fq/refined_at.py` | `refined_at/q{q}.txt` |
 | `basechange` | primitive models: base changes of the classes over every subfield in the configuration | `basechange/q{q}.txt` |
 | `export` | joins everything | `export/k3_fq_isog.q{q}.txt` |
 | `combine` | concatenates the exports | `k3_fq_isog.txt` |
