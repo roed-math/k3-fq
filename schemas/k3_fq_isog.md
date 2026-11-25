@@ -46,6 +46,7 @@ Labels are ordered by $q$, then $\bar\rho$, then the number encoded by `c`, then
 | is_ordinary | boolean | whether $p \nmid a_1$, i.e. slope $0$ occurs.  Then the Newton polygon is of K3 type with height $1$.  (Over non-prime fields, `height` $= 1$ alone does not imply this: e.g. $2(2 - T + 2T^2)(1-T)^{20}$ over $\mathbb{F}_4$ has slopes $1/2, 1, \ldots, 1, 3/2$) |
 | is_supersingular | boolean | whether all slopes equal $1$.  Equivalently all roots of $P$ are roots of unity, i.e. `geometric_picard_rank` = 22 |
 | cyclotomic_factors | integer[] | the sorted list, with multiplicity, of the $m$ such that $C(T) = \pm\prod \Phi_m(T)$ |
+| cyclotomic_multiset | text[] | `cyclotomic_factors` with repeated entries made distinct by a suffix `A`, `B`, ..., as for `slopes`: the $k$-th copy of $\Phi_m$ is `mA`, `mB`, ... (so $\Phi_1^2\Phi_2\Phi_6$ gives `["1A", "1B", "2A", "6A"]`).  This turns multiset searches into array containment: contains a multiset (`@>`), is supported in a set or contained in a multiset (`<@`), or equals a multiset (both) |
 | picard_rank | smallint | $\rho$, the multiplicity of $T = 1$ as a root of $P$.  For a K3 surface this is the rank of $NS(X)$ |
 | geometric_picard_rank | smallint | $\bar\rho = \deg C$, the number of roots of $P$ that are roots of unity.  For a K3 surface this is the rank of $NS(X_{\overline{\mathbb{F}}_q})$ |
 | geometric_extension_degree | integer | the least common multiple $E$ of the entries of `cyclotomic_factors` (1 if there are none).  It is the smallest $n$ with $\rho(X_{\mathbb{F}_{q^n}}) = \bar\rho$ |

@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from k3fq.columns import ISOG_COLUMNS  # noqa: E402
-from k3fq.cyclotomic import R, T  # noqa: E402
+from k3fq.cyclotomic import R, T, cyclotomic_multiset  # noqa: E402
 from k3fq.invariants import K3Poly  # noqa: E402
 from k3fq.pgformat import read_file, write_file  # noqa: E402
 
@@ -24,6 +24,7 @@ def supersingular_rows():
     rows = []
     for P in [2 * (1 - T) ** 22, 2 * (1 - T) ** 21 * (1 + T)]:
         row = K3Poly(R(P).list()).compute()
+        row["cyclotomic_multiset"] = cyclotomic_multiset(row["cyclotomic_factors"])
         row.update(number_fields=[], number_field_coeffs=[], galois_groups=[],
                    is_primitive=True, primitive_models=None,
                    geometric_class=None, twist_count=None, twists=None, max_twist_degree=None,

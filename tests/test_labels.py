@@ -125,3 +125,11 @@ def test_sort_key():
     assert sorted(labels, key=label_sort_key) == [
         "2.20.a.o", "2.20.c.ma", "2.20.c.m", "2.20.c.o", "2.20.c.zz", "2.20.ba.m", "2.22.b", "2.22.c", "2.22.ba",
         "3.0.a.nnnnnnnnnnn"]
+
+
+def test_cyclotomic_multiset():
+    from k3fq.cyclotomic import cyclotomic_multiset
+    assert cyclotomic_multiset([1, 1, 2, 6]) == ["1A", "1B", "2A", "6A"]
+    assert cyclotomic_multiset([6, 1, 2, 1]) == ["1A", "1B", "2A", "6A"]
+    assert cyclotomic_multiset([1] * 22)[-1] == "1V"
+    assert cyclotomic_multiset([]) == []

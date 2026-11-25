@@ -107,6 +107,10 @@ class Pipeline:
         elif stage == "refined_at":
             from .refined_at import VERSION
             key.update(refined_at=VERSION)
+        elif stage in ("export", "combine"):
+            # redo the exports when columns are added
+            from .columns import ISOG_COLUMNS
+            key.update(columns=[c for c, _ in ISOG_COLUMNS])
         return json.loads(json.dumps(key))
 
     def _read_marker(self, stage, q):
@@ -319,6 +323,29 @@ class Pipeline:
         os.makedirs(os.path.dirname(out), exist_ok=True)
         write_file(out, [("label", "text"), ("realizable_k3", "smallint"), ("realizable_kummer", "smallint")], rows)
         print("wrote %s (%s rows)" % (out, len(rows)))
+        return out
+
+    def cyclotomic_update_file(self, qs=None):
+        """
+        Write DATA/updates/cyclotomic_multiset.txt: label and
+        cyclotomic_multiset for every class, from the basic stage, for adding
+        that column to a table loaded before it existed.
+        """
+        from .cyclotomic import cyclotomic_multiset
+        from .pgformat import write_file
+        from .stages import iter_rows
+        qs = list(qs) if qs else self.cfg.qs
+
+        def rows():
+            for q in qs:
+                if not self.is_done("basic", q):
+                    raise RuntimeError("the basic stage for q=%s is not done" % q)
+                for r in iter_rows(self.datadir, q, ["label", "cyclotomic_factors"]):
+                    yield {"label": r["label"], "cyclotomic_multiset": cyclotomic_multiset(r["cyclotomic_factors"])}
+        out = os.path.join(self.datadir, "updates", "cyclotomic_multiset.txt")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        write_file(out, [("label", "text"), ("cyclotomic_multiset", "text[]")], rows())
+        print("wrote %s" % out)
         return out
 
     def _export_file(self, q):

@@ -26,7 +26,7 @@ from sage.all import ZZ, pari
 
 from .columns import (ISOG_COLUMNS, ISOG_TYPES, TWIST_COLUMNS, BASECHANGE_COLUMNS,
                       KUMMER_COLUMNS, CENSUS_COLUMNS)
-from .cyclotomic import R, split_cyclotomic
+from .cyclotomic import R, cyclotomic_multiset, split_cyclotomic
 from .labels import label_sort_key, poly_to_label
 from .lmfdb_access import lmfdb_db
 from .parallel import Runner, worker
@@ -543,6 +543,7 @@ def export_stage(q, datadir):
 
     def rows():
         for row in iter_rows(datadir, q):
+            row["cyclotomic_multiset"] = cyclotomic_multiset(row["cyclotomic_factors"])
             facs = [tuple(f) for f, e in row["transcendental_factors"]]
             if fields is not None:
                 row["galois_groups"] = [g if g is not None else fields[f]["galois_group"]

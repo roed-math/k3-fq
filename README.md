@@ -84,6 +84,8 @@ from lmfdb.k3fq.stats import K3FqStats
 K3FqStats().setup()   # statistics for /Motive/K3/Fq/stats
 ```
 
+The `cyclotomic_multiset` column (cyclotomic factors with repeats made distinct, as for `slopes`) is for the cyclotomic factor search; it needs a GIN index, `db.k3_fq_isog.create_index(["cyclotomic_multiset"], type="gin")`.  To add it to a table loaded before it existed, run `sage -python k3fq.py update-file --cyclotomic-multiset`, then `db.k3_fq_isog.add_column("cyclotomic_multiset", "text[]")` and `db.k3_fq_isog.update_from_file("DATA/updates/cyclotomic_multiset.txt")`.
+
 For the full table you will also want indexes, e.g. on `(q, poly)` (the default sort) and on `poly_str` with `text_pattern_ops` (for initial-coefficient searches).
 
 ## Notes on the algorithms

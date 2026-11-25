@@ -23,6 +23,7 @@ ISOG_COLUMNS = [
     ("is_ordinary", "boolean"),
     ("is_supersingular", "boolean"),
     ("cyclotomic_factors", "integer[]"),
+    ("cyclotomic_multiset", "text[]"),
     ("picard_rank", "smallint"),
     ("geometric_picard_rank", "smallint"),
     ("geometric_extension_degree", "integer"),
@@ -83,11 +84,14 @@ KUMMER_COLUMNS = ["kummer_av_classes", "realizable_kummer"]
 # The census stage overrides realizable_k3 and sets these (null for other classes)
 POLARIZATION_COLUMNS = ["polarization_degrees", "polarization_degrees_complete"]
 CENSUS_COLUMNS = ["realizable_k3"] + POLARIZATION_COLUMNS
+# Derived from the basic columns at export
+DERIVED_COLUMNS = ["cyclotomic_multiset"]
 # Not computed by this repository yet (exported as null)
 FUTURE_COLUMNS = ["num_lattices", "min_ample_degree", "min_quasi_ample_degree"]
 
 BASIC_COLUMNS = [c for c, _ in ISOG_COLUMNS
-                 if c not in TWIST_COLUMNS + BASECHANGE_COLUMNS + KUMMER_COLUMNS + POLARIZATION_COLUMNS + FUTURE_COLUMNS]
+                 if c not in TWIST_COLUMNS + BASECHANGE_COLUMNS + KUMMER_COLUMNS + POLARIZATION_COLUMNS + FUTURE_COLUMNS
+                 + DERIVED_COLUMNS]
 
 # Internal columns carried between stages but not exported
 GEOMETRIC_KEY = ("geometric_key", "text")

@@ -10,6 +10,25 @@ R = PolynomialRing(ZZ, "T")
 T = R.gen()
 
 
+MULTIPLICITY_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def cyclotomic_multiset(orders):
+    """
+    The cyclotomic factors as distinct strings, for searching on multisets
+    with array containment: the k-th copy of Phi_m becomes m followed by the
+    k-th capital letter, e.g. [1, 1, 2, 6] -> ["1A", "1B", "2A", "6A"]
+    (as for repeated slopes in av_fq_isog).
+    """
+    seen = {}
+    out = []
+    for m in sorted(int(m) for m in orders):
+        k = seen.get(m, 0)
+        seen[m] = k + 1
+        out.append("%s%s" % (m, MULTIPLICITY_LETTERS[k]))
+    return out
+
+
 def lcm(a, b):
     return a * b // gcd(a, b)
 

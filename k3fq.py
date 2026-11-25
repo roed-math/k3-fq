@@ -9,6 +9,8 @@ LMFDB.
     sage -python k3fq.py adopt-markers        keep markers from before 1649994
     sage -python k3fq.py counts Q ...         count classes without listing them
     sage -python k3fq.py update-file [Q ...]  update file for realizable_k3 (refined Artin-Tate)
+    sage -python k3fq.py update-file --cyclotomic-multiset [Q ...]
+                                              update file for the cyclotomic_multiset column
 
 The data directory, the fields and the programs are set in the configuration
 file (default: k3fq.toml next to this script); see README.md.
@@ -29,6 +31,8 @@ def main(argv=None):
     p = sub.add_parser("update-file", help="write DATA/updates/realizable.txt for update_from_file: the classes "
                        "ruled out by the refined Artin-Tate conditions")
     p.add_argument("q", type=int, nargs="*", help="only these fields (default: all)")
+    p.add_argument("--cyclotomic-multiset", action="store_true",
+                   help="instead write DATA/updates/cyclotomic_multiset.txt (label, cyclotomic_multiset)")
     sub.add_parser("adopt-markers", help="keep the work recorded by markers from before 1649994 "
                    "(only if the configuration has not changed since)")
     p = sub.add_parser("counts", help="count classes by geometric Picard rank, without listing them")
@@ -61,7 +65,10 @@ def main(argv=None):
         pipeline.status()
         return
     if args.command == "update-file":
-        pipeline.update_file(args.q)
+        if args.cyclotomic_multiset:
+            pipeline.cyclotomic_update_file(args.q)
+        else:
+            pipeline.update_file(args.q)
         return
     if args.command == "adopt-markers":
         pipeline.adopt_markers()
